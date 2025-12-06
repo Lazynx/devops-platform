@@ -1,0 +1,273 @@
+services:
+  auth-service:
+    container_name: devops-platform-auth-service
+    build:
+      context: ../services/auth-service
+      dockerfile: docker/Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../services/auth-service:/app
+      - /app/.venv
+    env_file:
+      - .env
+    command: ["uv", "run", "uvicorn", "src.auth_service.app:get_app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--factory"]
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  project-service:
+    build:
+      context: ../services/project-service
+      dockerfile: docker/Dockerfile.dev
+    container_name: devops-platform-project-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../services/project-service:/app
+      - /app/.venv
+    env_file:
+      - .env
+    command: ["uv", "run", "uvicorn", "src.project_service.app:get_app", "--host", "0.0.0.0", "--port", "8001", "--reload", "--factory"]
+    depends_on:
+      project-db:
+        condition: service_healthy
+
+  ci-service:
+    build:
+      context: ../services/ci-service
+      dockerfile: docker/Dockerfile.dev
+    container_name: devops-platform-ci-service
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../services/ci-service:/app
+      - /app/.venv
+    env_file:
+      - .env
+    command: ["uv", "run", "uvicorn", "src.ci_service.app:get_app", "--host", "0.0.0.0", "--port", "8002", "--reload", "--factory"]
+
+  secrets-service:
+    build:
+      context: ../services/secrets-service
+      dockerfile: docker/Dockerfile.dev
+    container_name: devops-platform-secrets-service
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../services/secrets-service:/app
+      - /app/.venv
+    env_file:
+      - .env
+    command: ["uv", "run", "uvicorn", "src.secrets_service.app:get_app", "--host", "0.0.0.0", "--port", "8003", "--reload", "--factory"]
+    depends_on:
+      secrets-db:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  observability-service:
+    build:
+      context: ../services/observability-service
+      dockerfile: docker/Dockerfile.dev
+    container_name: devops-platform-observability-service
+    ports:
+      - "8004:8004"
+    volumes:
+      - ../services/observability-service:/app
+      - /app/.venv
+    env_file:
+      - .env
+    command: ["uv", "run", "uvicorn", "src.observability_service.app:get_app", "--host", "0.0.0.0", "--port", "8004", "--reload", "--factory"]
+    depends_on:
+      observability-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  deployment-service:
+    build:
+      context: ../services/deployment-service
+      dockerfile: docker/Dockerfile.dev
+    container_name: devops-platform-deployment-service
+    ports:
+      - "8005:8005"
+    volumes:
+      - ../services/deployment-service:/app
+      - /app/.venv
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    command: ["uv", "run", "uvicorn", "src.deployment_service.app:get_app", "--host", "0.0.0.0", "--port", "8005", "--reload", "--factory"]
+    depends_on:
+      deployment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  auth-db:
+    container_name: devops-platform-auth-db
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_AUTH_LOGIN}
+      POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_AUTH_DATABASE}
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_AUTH_LOGIN}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  project-db:
+    container_name: devops-platform-project-db
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_PROJECT_LOGIN}
+      POSTGRES_PASSWORD: ${POSTGRES_PROJECT_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_PROJECT_DATABASE}
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_PROJECT_LOGIN}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  secrets-db:
+    container_name: devops-platform-secrets-db
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_SECRETS_LOGIN}
+      POSTGRES_PASSWORD: ${POSTGRES_SECRETS_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_SECRETS_DATABASE}
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_SECRETS_LOGIN}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  observability-db:
+    container_name: devops-platform-observability-db
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_OBSERVABILITY_LOGIN}
+      POSTGRES_PASSWORD: ${POSTGRES_OBSERVABILITY_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_OBSERVABILITY_DATABASE}
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_OBSERVABILITY_LOGIN}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  deployment-db:
+    container_name: devops-platform-deployment-db
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_DEPLOYMENT_LOGIN}
+      POSTGRES_PASSWORD: ${POSTGRES_DEPLOYMENT_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DEPLOYMENT_DATABASE}
+    ports:
+      - "5439:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_DEPLOYMENT_LOGIN}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    container_name: devops-platform-redis
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "6380:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+  zookeeper:
+    container_name: devops-platform-zookeeper
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+
+  kafka:
+    container_name: devops-platform-kafka
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  kafka-ui:
+    container_name: devops-platform-kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  vault:
+    container_name: devops-platform-vault
+    image: hashicorp/vault:1.15
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    command: server -dev
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - vault_data:/vault/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+  vault_data:

@@ -1,0 +1,77 @@
+[project]
+name = "secrets-service"
+version = "0.1.0"
+description = "Secrets Service"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.16.5",
+    "asyncpg>=0.30.0",
+    "dishka>=1.7.2",
+    "fastapi>=0.118.0",
+    "faststream[kafka]>=0.5.0",
+    "httpx>=0.28.1",
+    "hvac>=2.3.0",
+    "pydantic>=2.11.9",
+    "pydantic-settings>=2.11.0",
+    "sqlalchemy[asyncio]>=2.0.43",
+    "uvicorn>=0.37.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "pytest>=8.4.2",
+    "ruff>=0.13.2",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+enable_error_code = [
+  "truthy-bool",
+  "truthy-iterable",
+  "redundant-expr",
+  "unused-awaitable",
+  "ignore-without-code",
+  "possibly-undefined",
+  "redundant-self",
+  "explicit-override",
+  "mutable-override",
+  "unimported-reveal",
+  "deprecated",
+]
+
+[tool.ruff]
+src = ["src"]
+target-version = "py312"
+line-length = 110
+fix = true
+lint.select = [
+    "F",
+    "E",
+    "W",
+    "I",
+    "N",
+    "UP",
+    "B",
+    "SIM",
+    "C4",
+    "S",
+    "ANN",
+    "ASYNC",
+    "G",
+    "PL",
+    "RUF",
+]
+lint.ignore = ["D203", "D213", "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D", "ANN204",]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["D", "E501"]
+"migrations/*.py" = ["ALL"]

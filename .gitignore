@@ -14,6 +14,7 @@ node_modules/
 auth-service/.venv
 billing-service/.venv
 bot-service/.venv
+*.venv
 
 # Java
 *.class
@@ -25,6 +26,7 @@ bot-service/.venv
 .idea/
 *.sublime-workspace
 *.sublime-project
+.claude
 
 # Logs
 *.log
@@ -36,6 +38,8 @@ dist/
 
 # Environmental Files
 ../.env
+*.env
+/infra/.env
 
 # Other common files
 *.swp
