@@ -34,6 +34,8 @@ services:
     depends_on:
       project-db:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   ci-service:
     build:
@@ -116,6 +118,8 @@ services:
       POSTGRES_USER: ${POSTGRES_AUTH_LOGIN}
       POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
       POSTGRES_DB: ${POSTGRES_AUTH_DATABASE}
+    env_file:
+      - .env
     ports:
       - "5435:5432"
     healthcheck:
@@ -131,6 +135,8 @@ services:
       POSTGRES_USER: ${POSTGRES_PROJECT_LOGIN}
       POSTGRES_PASSWORD: ${POSTGRES_PROJECT_PASSWORD}
       POSTGRES_DB: ${POSTGRES_PROJECT_DATABASE}
+    env_file:
+      - .env
     ports:
       - "5436:5432"
     healthcheck:
@@ -146,6 +152,8 @@ services:
       POSTGRES_USER: ${POSTGRES_SECRETS_LOGIN}
       POSTGRES_PASSWORD: ${POSTGRES_SECRETS_PASSWORD}
       POSTGRES_DB: ${POSTGRES_SECRETS_DATABASE}
+    env_file:
+      - .env
     ports:
       - "5437:5432"
     healthcheck:
@@ -161,6 +169,8 @@ services:
       POSTGRES_USER: ${POSTGRES_OBSERVABILITY_LOGIN}
       POSTGRES_PASSWORD: ${POSTGRES_OBSERVABILITY_PASSWORD}
       POSTGRES_DB: ${POSTGRES_OBSERVABILITY_DATABASE}
+    env_file:
+      - .env
     ports:
       - "5438:5432"
     healthcheck:
@@ -176,6 +186,8 @@ services:
       POSTGRES_USER: ${POSTGRES_DEPLOYMENT_LOGIN}
       POSTGRES_PASSWORD: ${POSTGRES_DEPLOYMENT_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DEPLOYMENT_DATABASE}
+    env_file:
+      - .env
     ports:
       - "5439:5432"
     healthcheck:

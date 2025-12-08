@@ -1,0 +1,22 @@
+OK: 26 MiB in 36 packages
+The push refers to repository [127.0.0.1:5001/project-7679acfb-a117-4ab5-b5b1-9f0095cacb50]
+1871ee160d8e: Preparing
+7de351c488a2: Preparing
+05a1451a434a: Preparing
+f49922c8d9c1: Preparing
+d6f35dd92296: Preparing
+a205239e94df: Preparing
+32fa38829435: Preparing
+a6cd72a5d439: Preparing
+a205239e94df: Waiting
+32fa38829435: Waiting
+a6cd72a5d439: Waiting
+f49922c8d9c1: Mounted from project-523d4ae1-4650-4615-96b7-4d0897c4a412
+05a1451a434a: Mounted from project-523d4ae1-4650-4615-96b7-4d0897c4a412
+d6f35dd92296: Mounted from project-523d4ae1-4650-4615-96b7-4d0897c4a412
+a205239e94df: Mounted from project-523d4ae1-4650-4615-96b7-4d0897c4a412
+7de351c488a2: Pushed
+32fa38829435: Mounted from project-523d4ae1-4650-4615-96b7-4d0897c4a412
+a6cd72a5d439: Mounted from project-523d4ae1-4650-4615-96b7-4d0897c4a412
+1871ee160d8e: Pushed
+v1: digest: sha256:aa4eaa61fd4cb2c4feb9406bb9db2b25f6b8671c41f112983b73dbe2d0a63505 size: 1996

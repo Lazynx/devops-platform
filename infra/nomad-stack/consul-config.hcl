@@ -1,0 +1,29 @@
+datacenter = "dc1"
+data_dir = "/Users/Lazynx/VSC/kbtu/devops-platform/infra/nomad-stack/consul/data"
+log_level = "INFO"
+
+server = true
+bootstrap_expect = 1
+
+bind_addr = "127.0.0.1"
+client_addr = "0.0.0.0"
+advertise_addr = "127.0.0.1"
+
+ui_config {
+  enabled = true
+}
+
+ports {
+  http = 8500
+  dns = 8600
+  grpc = 8502
+}
+
+connect {
+  enabled = true
+}
+
+telemetry {
+  prometheus_retention_time = "60s"
+  disable_hostname = false
+}
