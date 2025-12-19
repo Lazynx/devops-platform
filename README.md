@@ -48,77 +48,9 @@ This platform provides a complete DevOps solution for managing the entire applic
 - **FastAPI**: Modern async web framework for REST APIs
 - **FastStream**: Framework for building event-driven microservices
 
-### System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Client Applications                         │
-│                    (Frontend / API Clients)                      │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-                    ┌────────────────┐
-                    │    Traefik     │
-                    │  API Gateway   │
-                    │   Port: 8090   │
-                    └────────┬───────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        │                    │                    │
-        ▼                    ▼                    ▼
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│Auth Service  │    │Project Service│   │Secrets Service│
-│  Port: 8000  │    │  Port: 8001  │   │  Port: 8003  │
-└──────┬───────┘    └───────┬───────┘   └───────┬───────┘
-       │                    │                    │
-       └────────────────────┼────────────────────┘
-                            │
-                            ▼
-                    ┌──────────────┐
-                    │Apache Kafka  │
-                    │ Event Bus    │
-                    │  Port: 9092  │
-                    └──────┬───────┘
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │Deployment Service│
-                  │   Port: 8005    │
-                  └────────┬─────────┘
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │  Nomad Cluster  │
-                  │   Port: 4646    │
-                  └────────┬─────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-        ▼                  ▼                  ▼
-   ┌─────────┐      ┌──────────┐      ┌──────────┐
-   │  Build  │      │  Deploy  │      │User Apps │
-   │   Job   │      │   Job    │      │(Dynamic) │
-   └────┬────┘      └────┬─────┘      └────┬─────┘
-        │                │                 │
-        ▼                ▼                 │
-   ┌─────────┐      ┌──────────┐           │
-   │  Nexus  │─────▶│  Vault   │           │
-   │Registry │      │ Secrets  │           │
-   └─────────┘      └──────────┘           │
-                                           │
-   ┌───────────────────────────────────────┘
-   │
-   ▼
-┌──────────┐         ┌──────────┐
-│  Consul  │◄────────│PostgreSQL│
-│ Service  │         │Databases │
-│Discovery │         │          │
-└──────────┘         └──────────┘
-```
-
 ## Platform Services
 
-### Authentication Service (Port 8000)
+### Authentication Service
 Handles user authentication and authorization with GitHub OAuth integration.
 
 **Technologies**: FastAPI, SQLAlchemy, Redis, JWT
@@ -129,7 +61,7 @@ Handles user authentication and authorization with GitHub OAuth integration.
 - Session management
 - User profile management
 
-### Project Service (Port 8001)
+### Project Service
 Manages project lifecycle and repository analysis.
 
 **Technologies**: FastAPI, SQLAlchemy, GitHub API
@@ -140,7 +72,7 @@ Manages project lifecycle and repository analysis.
 - Project configuration management
 - Deployment status tracking
 
-### Secrets Service (Port 8003)
+### Secrets Service
 Manages application secrets and environment variables.
 
 **Technologies**: FastAPI, HashiCorp Vault, Kafka
@@ -151,7 +83,7 @@ Manages application secrets and environment variables.
 - Bulk secret creation and updates
 - Secret encryption and access control
 
-### Deployment Service (Port 8005)
+### Deployment Service
 Orchestrates application builds and deployments.
 
 **Technologies**: FastAPI, Nomad API, Docker, Nexus
@@ -343,10 +275,7 @@ cd infra
 
 2. **Run database migrations**:
 ```bash
-nomad job run infra/nomad-stack/jobs/migrations/migrate-auth-service.nomad
-nomad job run infra/nomad-stack/jobs/migrations/migrate-project-service.nomad
-nomad job run infra/nomad-stack/jobs/migrations/migrate-secrets-service.nomad
-nomad job run infra/nomad-stack/jobs/migrations/migrate-deployment-service.nomad
+./run_migrations.sh
 ```
 
 3. **Deploy platform services**:
