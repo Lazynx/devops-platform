@@ -20,8 +20,8 @@ class SQLAlchemyProjectRepository(IProjectRepository):
     async def get_by_owner_id(self, owner_id: UUID) -> list[Project]:
         result = await self._db.execute(
             select(Project)
-            .where(Project.owner_id == owner_id)
-            .where(Project.status != ProjectStatus.DELETED)
+            .where(Project.owner_id == str(owner_id))
+            .where(Project.status != ProjectStatus.deleted)
             .order_by(Project.updated_at.desc())
         )
         return list(result.scalars().all())

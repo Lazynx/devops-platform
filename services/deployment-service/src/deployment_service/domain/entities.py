@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from enum import Enum as PyEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum as SqlEnum, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, Enum as SqlEnum, Float, ForeignKey, Integer, String, Text, Uuid, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -11,29 +11,30 @@ class Base(DeclarativeBase):
 
 
 class Environment(str, PyEnum):
-    DEVELOPMENT = 'development'
-    STAGING = 'staging'
-    PRODUCTION = 'production'
+    development = 'development'
+    staging = 'staging'
+    production = 'production'
 
 
 class DeploymentStatus(str, PyEnum):
-    PENDING = 'pending'
-    DEPLOYING = 'deploying'
-    RUNNING = 'running'
-    FAILED = 'failed'
-    STOPPED = 'stopped'
+    pending = 'pending'
+    building = 'building'
+    deploying = 'deploying'
+    running = 'running'
+    failed = 'failed'
+    stopped = 'stopped'
 
 
 class DeploymentConfig(Base):
     __tablename__ = 'deployment_configs'
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    project_id: Mapped[UUID] = mapped_column(String(255), nullable=False)
+    project_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     github_repo_url: Mapped[str] = mapped_column(String(512), nullable=False)
 
     environment: Mapped[Environment] = mapped_column(
         SqlEnum(Environment),
-        default=Environment.DEVELOPMENT,
+        default=Environment.development,
         nullable=False
     )
 
@@ -47,8 +48,6 @@ class DeploymentConfig(Base):
 
     port: Mapped[int] = mapped_column(Integer, default=8000, nullable=False)
     health_check_path: Mapped[str] = mapped_column(String(255), default='/health', nullable=False)
-
-    env_variables: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
 
     dockerfile_path: Mapped[str] = mapped_column(String(255), default='./Dockerfile', nullable=False)
     docker_build_context: Mapped[str] = mapped_column(String(255), default='.', nullable=False)
@@ -95,15 +94,16 @@ class Deployment(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     config_id: Mapped[UUID] = mapped_column(ForeignKey('deployment_configs.id'), nullable=False)
-    project_id: Mapped[UUID] = mapped_column(String(255), nullable=False)
+    project_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
 
     version: Mapped[str] = mapped_column(String(255), nullable=False)
     commit_sha: Mapped[str] = mapped_column(String(255), nullable=True)
     image_url: Mapped[str] = mapped_column(String(512), nullable=True)
+    deployment_url: Mapped[str] = mapped_column(String(512), nullable=True)
 
     status: Mapped[DeploymentStatus] = mapped_column(
         SqlEnum(DeploymentStatus),
-        default=DeploymentStatus.PENDING,
+        default=DeploymentStatus.pending,
         nullable=False
     )
 
@@ -124,22 +124,28 @@ class Deployment(Base):
         nullable=False,
     )
 
-    def mark_deploying(self) -> None:
-        self.status = DeploymentStatus.DEPLOYING
+    def mark_building(self) -> None:
+        self.status = DeploymentStatus.building
         self.updated_at = datetime.now(UTC)
 
-    def mark_running(self, image_url: str) -> None:
-        self.status = DeploymentStatus.RUNNING
+    def mark_deploying(self) -> None:
+        self.status = DeploymentStatus.deploying
+        self.updated_at = datetime.now(UTC)
+
+    def mark_running(self, image_url: str, deployment_url: str | None = None) -> None:
+        self.status = DeploymentStatus.running
         self.image_url = image_url
+        self.deployment_url = deployment_url
         self.deployed_at = datetime.now(UTC)
         self.updated_at = datetime.now(UTC)
 
     def mark_failed(self, error_message: str) -> None:
-        self.status = DeploymentStatus.FAILED
+        self.status = DeploymentStatus.failed
         self.error_message = error_message
         self.updated_at = datetime.now(UTC)
 
     def mark_stopped(self) -> None:
-        self.status = DeploymentStatus.STOPPED
+        self.status = DeploymentStatus.stopped
         self.stopped_at = datetime.now(UTC)
         self.updated_at = datetime.now(UTC)
+

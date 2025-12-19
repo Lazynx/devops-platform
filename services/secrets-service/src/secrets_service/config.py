@@ -29,7 +29,7 @@ class VaultConfig(BaseSettings):
         env_prefix='VAULT_',
         env_file=ENV_FILE,
     )
-    url: str = 'http://localhost:8200'
+    url: str = 'http://vault:8200'
     token: SecretStr = SecretStr('dev-token')
 
 

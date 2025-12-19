@@ -44,7 +44,7 @@ class DockerDeploymentExecutor(DeploymentExecutor):
 
             secrets = await self._fetch_secrets(deployment_id)
 
-            env_variables = {**config.env_variables, **secrets}
+            env_variables = dict(secrets)
 
             repo_path = await self._github_client.clone_repository(
                 repo_url=config.github_repo_url,
@@ -90,7 +90,7 @@ class DockerDeploymentExecutor(DeploymentExecutor):
         if not deployment:
             raise ValueError(f'Deployment {deployment_id} not found')
 
-        if deployment.status != DeploymentStatus.RUNNING:
+        if deployment.status != DeploymentStatus.running:
             raise ValueError(f'Deployment {deployment_id} is not running')
 
         try:

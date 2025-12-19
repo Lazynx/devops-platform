@@ -23,6 +23,10 @@ class IDeploymentConfigRepository(ABC):
     ) -> DeploymentConfig | None:
         raise NotImplementedError
 
+    @abstractmethod
+    async def delete_by_project_id(self, project_id: UUID) -> None:
+        raise NotImplementedError
+
 
 class IDeploymentRepository(ABC):
     @abstractmethod
@@ -39,6 +43,10 @@ class IDeploymentRepository(ABC):
 
     @abstractmethod
     async def get_latest_by_config(self, config_id: UUID) -> Deployment | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def delete_by_config_id(self, config_id: UUID) -> None:
         raise NotImplementedError
 
 

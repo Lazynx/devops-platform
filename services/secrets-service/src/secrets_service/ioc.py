@@ -4,6 +4,7 @@ from dishka import Provider, Scope, from_context, provide
 from faststream.kafka import KafkaBroker
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from secrets_service.application.interactors.create_bulk_secrets import CreateBulkSecretsInteractor
 from secrets_service.application.interactors.create_secret import CreateSecretInteractor
 from secrets_service.application.interactors.delete_secret import DeleteSecretInteractor
 from secrets_service.application.interactors.get_secrets import (
@@ -11,6 +12,8 @@ from secrets_service.application.interactors.get_secrets import (
     GetSecretsByProjectInteractor,
     GetSecretValueInteractor,
 )
+from secrets_service.application.interactors.handle_project_created_with_secrets import HandleProjectCreatedWithSecretsInteractor
+from secrets_service.application.interactors.handle_project_deleted import HandleProjectDeletedInteractor
 from secrets_service.application.interactors.update_secret import UpdateSecretInteractor
 from secrets_service.application.interfaces.secret_repository import SecretRepository
 from secrets_service.config import Settings
@@ -46,8 +49,11 @@ class AppProvider(Provider):
     secret_repository = provide(SqlAlchemySecretRepository, scope=Scope.REQUEST, provides=SecretRepository)
 
     create_secret_interactor = provide(CreateSecretInteractor, scope=Scope.REQUEST)
+    create_bulk_secrets_interactor = provide(CreateBulkSecretsInteractor, scope=Scope.REQUEST)
     get_secrets_by_project_interactor = provide(GetSecretsByProjectInteractor, scope=Scope.REQUEST)
     get_secrets_by_deployment_interactor = provide(GetSecretsByDeploymentInteractor, scope=Scope.REQUEST)
     get_secret_value_interactor = provide(GetSecretValueInteractor, scope=Scope.REQUEST)
     update_secret_interactor = provide(UpdateSecretInteractor, scope=Scope.REQUEST)
     delete_secret_interactor = provide(DeleteSecretInteractor, scope=Scope.REQUEST)
+    handle_project_created_with_secrets_interactor = provide(HandleProjectCreatedWithSecretsInteractor, scope=Scope.REQUEST)
+    handle_project_deleted_interactor = provide(HandleProjectDeletedInteractor, scope=Scope.REQUEST)

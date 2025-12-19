@@ -1,0 +1,13 @@
+{
+  "service": {
+    "name": "kafka",
+    "port": 9094,
+    "address": "127.0.0.1",
+    "tags": ["messaging", "queue"],
+    "check": {
+      "tcp": "127.0.0.1:9094",
+      "interval": "10s",
+      "timeout": "3s"
+    }
+  }
+}

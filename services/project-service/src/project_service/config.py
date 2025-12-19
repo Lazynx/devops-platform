@@ -33,9 +33,13 @@ class KafkaConfig(BaseSettings):
 
 class Settings(BaseSettings):
     secret_key: SecretStr = SecretStr('')
-    auth_service_url: str = 'http://localhost:8000'
+    auth_service_url: str = 'http://auth-service:8000'
     github_api_url: str = 'https://api.github.com'
     webhook_url: str = 'http://localhost:8001'
+    deployment_service_url: str = 'http://deployment-service:8005'
+    enable_auto_deployment: bool = False
+    project_status_cache_ttl: int = 5
+    deployment_config_timeout: int = 30
     postgres: PostgresConfig = PostgresConfig()
     kafka: KafkaConfig = KafkaConfig()
 

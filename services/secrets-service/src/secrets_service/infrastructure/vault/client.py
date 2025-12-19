@@ -34,3 +34,9 @@ class VaultClient:
 
     def is_authenticated(self) -> bool:
         return self._client.is_authenticated()
+
+    async def create_policy(self, name: str, rules: str) -> None:
+        try:
+            self._client.sys.create_or_update_policy(name=name, policy=rules)
+        except VaultError as e:
+            raise RuntimeError(f'Failed to create policy in Vault: {e}') from e

@@ -1,0 +1,25 @@
+{
+    "service": {
+      "name": "nexus",
+      "port": 8083,
+      "address": "127.0.0.1",
+      "tags": ["registry", "artifacts"],
+      "meta": {
+        "docker_port": "8082",
+        "ui_port": "8083"
+      },
+      "checks": [
+        {
+          "http": "http://127.0.0.1:8083/service/rest/v1/status",
+          "interval": "30s",
+          "timeout": "5s"
+        },
+        {
+          "name": "Docker registry port",
+          "tcp": "127.0.0.1:8082",
+          "interval": "10s",
+          "timeout": "2s"
+        }
+      ]
+    }
+  }

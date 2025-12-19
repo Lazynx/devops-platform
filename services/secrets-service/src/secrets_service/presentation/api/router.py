@@ -5,7 +5,8 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import inject
 from fastapi import APIRouter, HTTPException, status
 
-from secrets_service.application.dtos import CreateSecretDTO, UpdateSecretDTO
+from secrets_service.application.dtos import CreateBulkSecretsDTO, CreateSecretDTO, SecretItemDTO, UpdateSecretDTO
+from secrets_service.application.interactors.create_bulk_secrets import CreateBulkSecretsInteractor
 from secrets_service.application.interactors.create_secret import CreateSecretInteractor
 from secrets_service.application.interactors.delete_secret import DeleteSecretInteractor
 from secrets_service.application.interactors.get_secrets import (
@@ -15,8 +16,10 @@ from secrets_service.application.interactors.get_secrets import (
 )
 from secrets_service.application.interactors.update_secret import UpdateSecretInteractor
 from secrets_service.presentation.api.schemas import (
+    CreateBulkSecretsRequest,
     CreateSecretRequest,
     DeleteSecretResponse,
+    SecretItem,
     SecretResponse,
     SecretWithValueResponse,
     UpdateSecretRequest,
@@ -47,6 +50,34 @@ async def create_secret(
         return SecretResponse.from_dto(result)
     except Exception as e:
         logger.error(f'Failed to create secret: {e}')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post('/bulk', response_model=list[SecretResponse], status_code=status.HTTP_201_CREATED)
+@inject
+async def create_bulk_secrets(
+    request: CreateBulkSecretsRequest,
+    interactor: FromDishka[CreateBulkSecretsInteractor],
+) -> list[SecretResponse]:
+    try:
+        dto = CreateBulkSecretsDTO(
+            project_id=request.project_id,
+            deployment_id=request.deployment_id,
+            secrets=[
+                SecretItemDTO(
+                    key=secret.key,
+                    value=secret.value,
+                    secret_type=secret.secret_type,
+                    description=secret.description,
+                )
+                for secret in request.secrets
+            ],
+        )
+        results = await interactor.execute(dto)
+
+        return [SecretResponse.from_dto(result) for result in results]
+    except Exception as e:
+        logger.error(f'Failed to create bulk secrets: {e}')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from deployment_service.application.interfaces import IDeploymentRepository
@@ -32,10 +32,24 @@ class DeploymentRepository(IDeploymentRepository):
         return list(result.scalars().all())
 
     async def get_latest_by_config(self, config_id: UUID) -> Deployment | None:
-        result = await self._session.execute(
+        query = (
             select(Deployment)
             .where(Deployment.config_id == config_id)
             .order_by(Deployment.created_at.desc())
             .limit(1)
         )
+        result = await self._session.execute(query)
         return result.scalar_one_or_none()
+
+    async def delete_by_config_id(self, config_id: UUID) -> None:
+        query = delete(Deployment).where(Deployment.config_id == config_id)
+        await self._session.execute(query)
+
+    async def get_by_project_id(self, project_id: UUID) -> list[Deployment]:
+        result = await self._session.execute(
+            select(Deployment)
+            .where(Deployment.project_id == project_id)
+            .order_by(Deployment.created_at.desc())
+        )
+        return list(result.scalars().all())
+

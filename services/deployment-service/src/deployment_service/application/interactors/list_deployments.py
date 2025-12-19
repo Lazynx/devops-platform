@@ -19,6 +19,7 @@ class ListDeploymentsInteractor:
                 version=deployment.version,
                 commit_sha=deployment.commit_sha,
                 image_url=deployment.image_url,
+                deployment_url=deployment.deployment_url,
                 status=deployment.status.value,
                 error_message=deployment.error_message,
                 deployed_at=deployment.deployed_at,

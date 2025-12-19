@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from secrets_service.application.interfaces.secret_repository import SecretRepository
@@ -34,7 +34,7 @@ class SqlAlchemySecretRepository(SecretRepository):
         return list(result.scalars().all())
 
     async def delete(self, secret_id: UUID) -> None:
-        secret = await self.get_by_id(secret_id)
-        if secret:
-            await self._session.delete(secret)
-            await self._session.flush()
+        query = delete(SecretMetadata).where(SecretMetadata.id == secret_id)
+        await self._session.execute(query)
+
+

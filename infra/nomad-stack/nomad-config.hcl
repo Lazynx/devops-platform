@@ -1,6 +1,12 @@
 datacenter = "dc1"
 data_dir = "/Users/Lazynx/VSC/kbtu/devops-platform/infra/nomad-stack/nomad/data"
-bind_addr = "0.0.0.0"
+bind_addr = "127.0.0.1"
+
+advertise {
+  http = "127.0.0.1"
+  rpc  = "127.0.0.1"
+  serf = "127.0.0.1"
+}
 
 server {
   enabled = true
@@ -19,7 +25,8 @@ client {
   cpu_total_compute = 40000
 
   options = {
-    "driver.allowlist" = "docker"
+    "driver.allowlist" = "docker,raw_exec"
+    "driver.raw_exec.enable" = "1"
   }
 
   reserved {
@@ -35,6 +42,16 @@ client {
 
   host_volume "builds" {
     path = "/Users/Lazynx/VSC/kbtu/devops-platform/infra/nomad-stack/nomad/builds"
+    read_only = false
+  }
+
+  host_volume "esdata" {
+    path = "/Users/Lazynx/VSC/kbtu/devops-platform/infra/nomad-stack/nomad/esdata"
+    read_only = false
+  }
+
+  host_volume "opensearch_data" {
+    path = "/Users/Lazynx/VSC/kbtu/devops-platform/infra/nomad-stack/nomad/opensearch_data"
     read_only = false
   }
 }
@@ -71,5 +88,9 @@ telemetry {
 vault {
   enabled = true
   address = "http://127.0.0.1:8200"
-  token = "dev-root-token"
+  
+  default_identity {
+    aud = ["vault.io"]
+    ttl = "1h"
+  }
 }

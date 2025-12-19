@@ -33,8 +33,13 @@ class KafkaConfig(BaseSettings):
 
 
 class Settings(BaseSettings):
-    auth_service_url: str = 'http://localhost:8001'
-    secrets_service_url: str = 'http://localhost:8003'
+    auth_service_url: str = 'http://auth-service.service.consul:8000'
+    secrets_service_url: str = 'http://secrets-service.service.consul:8003'
+    nomad_url: str = 'http://nomad.service.consul:4646'
+    nexus_registry_url: str = 'nexus.service.consul:8082'
+    nexus_docker_repository: str = 'docker-hosted'
+    nexus_user: str = 'admin'
+    nexus_password: str = 'admin123'
     postgres: PostgresConfig = PostgresConfig()
     kafka: KafkaConfig = KafkaConfig()
 

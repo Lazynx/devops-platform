@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from auth_service.application.dtos import LoginResultDTO, OAuthCallbackInputDTO
 from auth_service.application.interfaces import (

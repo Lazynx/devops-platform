@@ -295,19 +295,19 @@ class AnalyzeRepositoryInteractor:
             framework = 'FastAPI'
             confidence = 'high'
             if 'main.py' in file_names:
-                start_cmd = 'uvicorn main:app --reload'
+                start_cmd = 'uvicorn main:app --host 0.0.0.0 --port $PORT'
                 detected.append('main.py')
             elif 'app.py' in file_names:
-                start_cmd = 'uvicorn app:app --reload'
+                start_cmd = 'uvicorn app:app --host 0.0.0.0 --port $PORT'
                 detected.append('app.py')
             else:
-                start_cmd = 'uvicorn main:app --reload'
+                start_cmd = 'uvicorn main:app --host 0.0.0.0 --port $PORT'
 
         # Django
         elif 'django' in dependencies:
             framework = 'Django'
             confidence = 'high'
-            start_cmd = 'python manage.py runserver'
+            start_cmd = 'python manage.py runserver 0.0.0.0:$PORT'
             if 'manage.py' in file_names:
                 detected.append('manage.py')
 
@@ -315,7 +315,7 @@ class AnalyzeRepositoryInteractor:
         elif 'flask' in dependencies:
             framework = 'Flask'
             confidence = 'high'
-            start_cmd = 'flask run'
+            start_cmd = 'flask run --host=0.0.0.0 --port=$PORT'
             if 'app.py' in file_names:
                 detected.append('app.py')
             elif 'wsgi.py' in file_names:
@@ -325,7 +325,7 @@ class AnalyzeRepositoryInteractor:
         elif 'manage.py' in file_names:
             framework = 'Django'
             confidence = 'medium'
-            start_cmd = 'python manage.py runserver'
+            start_cmd = 'python manage.py runserver 0.0.0.0:$PORT'
             detected.append('manage.py')
 
         return self._create_config(

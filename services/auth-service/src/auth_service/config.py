@@ -62,6 +62,14 @@ class RedisConfig(BaseSettings):
         return f'redis://{self.host}:{self.port}/{self.db}'
 
 
+class KafkaConfig(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix='KAFKA_',
+        env_file=ENV_FILE,
+    )
+    bootstrap_servers: str = ''
+
+
 class Settings(BaseSettings):
     secret_key: SecretStr = SecretStr('')
     frontend_url: str = 'http://localhost:3000'
@@ -69,6 +77,7 @@ class Settings(BaseSettings):
     jwt: JWTConfig = JWTConfig()
     redis: RedisConfig = RedisConfig()
     github_oauth: GithubOAuthConfig = GithubOAuthConfig()
+    kafka: KafkaConfig = KafkaConfig()
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,

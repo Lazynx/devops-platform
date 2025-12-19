@@ -19,6 +19,20 @@ class AuthServiceHTTPClient(IAuthService):
             data = response.json()
             return UUID(data['id'])
 
+    async def get_github_token(self, access_token: str) -> str:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f'{self._base_url}/api/v1/auth/oauth/github/token',
+                headers={'Authorization': f'Bearer {access_token}'},
+            )
+            response.raise_for_status()
+            data = response.json()
+            github_token = data.get('github_token')
+            if not github_token:
+                raise ValueError('GitHub token not found in response')
+            return github_token
+
     async def verify_project_access(self, access_token: str, project_id: UUID) -> bool:
         user_id = await self.get_current_user_id(access_token)
         return True
+

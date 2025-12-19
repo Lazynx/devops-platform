@@ -41,6 +41,18 @@ dist/
 *.env
 /infra/.env
 
+# Infrastructure Runtime Data
+infra/nomad-stack/nomad/data/
+infra/nomad-stack/consul/data/
+infra/nexus-data/
+infra/nexus/
+infra/sonatype-work/
+infra/opensearch-data/
+infra/kafka-data/
+infra/zookeeper-data/
+infra/postgres-data/
+infra/logs/
+
 # Other common files
 *.swp
 *.swo

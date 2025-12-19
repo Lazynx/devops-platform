@@ -1,0 +1,13 @@
+{
+  "service": {
+    "name": "opensearch",
+    "port": 9200,
+    "address": "127.0.0.1",
+    "tags": ["search", "logging"],
+    "check": {
+      "http": "http://127.0.0.1:9200/_cluster/health",
+      "interval": "10s",
+      "timeout": "3s"
+    }
+  }
+}

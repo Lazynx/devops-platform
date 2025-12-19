@@ -7,6 +7,7 @@ from uuid import UUID
 class CreateDeploymentConfigInputDTO:
     user_access_token: str
     project_id: UUID
+    github_repo_url: str
     environment: str
     instance_count: int
     cpu_limit: float
@@ -16,7 +17,6 @@ class CreateDeploymentConfigInputDTO:
     max_instances: int
     port: int
     health_check_path: str
-    env_variables: dict[str, str]
     dockerfile_path: str
     docker_build_context: str
 
@@ -25,6 +25,7 @@ class CreateDeploymentConfigInputDTO:
 class CreateDeploymentConfigOutputDTO:
     id: UUID
     project_id: UUID
+    github_repo_url: str
     environment: str
     instance_count: int
     cpu_limit: float
@@ -34,7 +35,6 @@ class CreateDeploymentConfigOutputDTO:
     max_instances: int
     port: int
     health_check_path: str
-    env_variables: dict[str, str]
     dockerfile_path: str
     docker_build_context: str
     created_at: datetime
@@ -51,7 +51,6 @@ class UpdateDeploymentConfigInputDTO:
     auto_scaling_enabled: bool | None = None
     min_instances: int | None = None
     max_instances: int | None = None
-    env_variables: dict[str, str] | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -96,6 +95,7 @@ class GetDeploymentOutputDTO:
     version: str
     commit_sha: str | None
     image_url: str | None
+    deployment_url: str | None
     status: str
     error_message: str | None
     deployed_at: datetime | None

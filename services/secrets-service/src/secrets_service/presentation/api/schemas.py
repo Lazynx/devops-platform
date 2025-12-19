@@ -15,6 +15,19 @@ class CreateSecretRequest(BaseModel):
     description: str | None = None
 
 
+class SecretItem(BaseModel):
+    key: str = Field(..., min_length=1, max_length=255)
+    value: str = Field(..., min_length=1)
+    secret_type: SecretType = SecretType.ENV_VAR
+    description: str | None = None
+
+
+class CreateBulkSecretsRequest(BaseModel):
+    project_id: UUID
+    deployment_id: UUID | None = None
+    secrets: list[SecretItem] = Field(..., min_length=1)
+
+
 class UpdateSecretRequest(BaseModel):
     value: str = Field(..., min_length=1)
     description: str | None = None

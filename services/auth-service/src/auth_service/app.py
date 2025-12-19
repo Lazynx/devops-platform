@@ -11,13 +11,25 @@ from auth_service.infrastructure.logging import configure_logging
 from auth_service.infrastructure.persistence.sqlalchemy import mapper_registry
 from auth_service.ioc import AppProvider
 from auth_service.presentation.api.auth import router as auth_router
+from faststream.kafka import KafkaBroker
+from faststream.kafka.fastapi import KafkaRouter
+
 
 logger = logging.getLogger(__name__)
 
 configure_logging()
-container = make_async_container(AppProvider(), context={Settings: settings})
+
 
 def get_app() -> FastAPI:
+    kafka_router = KafkaRouter(settings.kafka.bootstrap_servers)
+
+    container = make_async_container(
+        AppProvider(),
+        context={
+            Settings: settings,
+            KafkaBroker: kafka_router.broker,
+        }
+    )
     app = FastAPI(
         title='Auth Service',
         description='Auth Service',
@@ -25,17 +37,24 @@ def get_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-        ],
+        allow_origin_regex=r'http://localhost:\d+',
         allow_credentials=True,
         allow_methods=['*'],
         allow_headers=['*'],
     )
     fastapi_integration.setup_dishka(container, app)
+    app.include_router(kafka_router)
+
+    @app.on_event("startup")
+    async def startup_event():
+        from auth_service.infrastructure.logging_producer import publish_health_logs
+        import asyncio
+        asyncio.create_task(publish_health_logs(kafka_router.broker))
 
     app.include_router(auth_router.router)
+    
+    from auth_service.presentation.api.system import router as system_router
+    app.include_router(system_router.router)
     return app
 
 if __name__ == '__main__':

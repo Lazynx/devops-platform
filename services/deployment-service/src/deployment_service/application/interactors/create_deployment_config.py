@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from deployment_service.application.dtos import (
     CreateDeploymentConfigInputDTO,
@@ -45,7 +45,8 @@ class CreateDeploymentConfigInteractor:
         config = DeploymentConfig(
             id=uuid4(),
             project_id=dto.project_id,
-            environment=Environment(dto.environment),
+            github_repo_url=dto.github_repo_url,
+            environment=Environment(dto.environment.lower()),
             instance_count=dto.instance_count,
             cpu_limit=dto.cpu_limit,
             memory_limit=dto.memory_limit,
@@ -54,7 +55,6 @@ class CreateDeploymentConfigInteractor:
             max_instances=dto.max_instances,
             port=dto.port,
             health_check_path=dto.health_check_path,
-            env_variables=dto.env_variables,
             dockerfile_path=dto.dockerfile_path,
             docker_build_context=dto.docker_build_context,
             created_at=now,
@@ -63,7 +63,24 @@ class CreateDeploymentConfigInteractor:
 
         saved_config = await self._config_repo.save(config)
 
-        return CreateDeploymentConfigOutputDTO(**saved_config.__dict__)
+        return CreateDeploymentConfigOutputDTO(
+            id=saved_config.id,
+            project_id=UUID(str(saved_config.project_id)), # Ensure UUID
+            github_repo_url=saved_config.github_repo_url,
+            environment=saved_config.environment.value,
+            instance_count=saved_config.instance_count,
+            cpu_limit=saved_config.cpu_limit,
+            memory_limit=saved_config.memory_limit,
+            auto_scaling_enabled=saved_config.auto_scaling_enabled,
+            min_instances=saved_config.min_instances,
+            max_instances=saved_config.max_instances,
+            port=saved_config.port,
+            health_check_path=saved_config.health_check_path,
+            dockerfile_path=saved_config.dockerfile_path,
+            docker_build_context=saved_config.docker_build_context,
+            created_at=saved_config.created_at,
+            updated_at=saved_config.updated_at,
+        )
 
     def _validate_resources(self, dto: CreateDeploymentConfigInputDTO) -> None:
         if dto.instance_count < 1 or dto.instance_count > 20:

@@ -12,6 +12,7 @@ def new_session_maker(psql_config: PostgresConfig) -> async_sessionmaker[AsyncSe
         database_uri,
         pool_size=15,
         max_overflow=15,
+        pool_pre_ping=True,
     )
     return async_sessionmaker(
         engine, class_=AsyncSession, autoflush=False, expire_on_commit=False

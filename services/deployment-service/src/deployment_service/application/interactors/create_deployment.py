@@ -42,7 +42,7 @@ class CreateDeploymentInteractor:
             project_id=config.project_id,
             version=dto.version,
             commit_sha=dto.commit_sha,
-            status=DeploymentStatus.PENDING,
+            status=DeploymentStatus.pending,
             created_at=now,
             updated_at=now,
         )

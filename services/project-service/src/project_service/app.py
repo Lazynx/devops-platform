@@ -3,6 +3,7 @@ import logging
 import uvicorn
 from dishka import make_async_container
 from dishka.integrations import fastapi as fastapi_integration
+from dishka.integrations import faststream as faststream_integration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from faststream.kafka import KafkaBroker
@@ -10,6 +11,7 @@ from faststream.kafka.fastapi import KafkaRouter
 
 from project_service.config import Settings, settings
 from project_service.infrastructure.logging import configure_logging
+from project_service.infrastructure.messaging.consumers import router as consumer_router
 from project_service.ioc import AppProvider
 from project_service.presentation.api.projects import router as project_router
 from project_service.presentation.api.repositories import router as repository_router
@@ -20,7 +22,10 @@ configure_logging()
 
 
 def get_app() -> FastAPI:
-    kafka_router = KafkaRouter(settings.kafka.bootstrap_servers)
+    kafka_router = KafkaRouter(
+        settings.kafka.bootstrap_servers,
+    )
+    kafka_router.include_router(consumer_router)
 
     container = make_async_container(
         AppProvider(),
@@ -30,6 +35,7 @@ def get_app() -> FastAPI:
         }
     )
 
+    faststream_integration.setup_dishka(container, kafka_router)
     app = FastAPI(
         title='Project Service',
         description='Project Service',
@@ -38,10 +44,7 @@ def get_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-        ],
+        allow_origin_regex=r'http://localhost:\d+',
         allow_credentials=True,
         allow_methods=['*'],
         allow_headers=['*'],
@@ -51,11 +54,20 @@ def get_app() -> FastAPI:
     app.include_router(kafka_router)
     app.include_router(repository_router.router)
     app.include_router(project_router.router)
+    
+    from project_service.presentation.api.system import router as system_router
+    app.include_router(system_router.router)
+
+    @app.on_event("startup")
+    async def startup_event():
+        from project_service.infrastructure.logging_producer import publish_health_logs
+        import asyncio
+        asyncio.create_task(publish_health_logs(kafka_router.broker))
+
     return app
 
 
 if __name__ == '__main__':
-
     uvicorn.run(
         get_app(),
         host='0.0.0.0',

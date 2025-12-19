@@ -15,6 +15,21 @@ class CreateSecretDTO:
 
 
 @dataclass
+class CreateBulkSecretsDTO:
+    project_id: UUID
+    secrets: list['SecretItemDTO']
+    deployment_id: UUID | None = None
+
+
+@dataclass
+class SecretItemDTO:
+    key: str
+    value: str
+    secret_type: SecretType
+    description: str | None = None
+
+
+@dataclass
 class SecretDTO:
     id: UUID
     project_id: UUID

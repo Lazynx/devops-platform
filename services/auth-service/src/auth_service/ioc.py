@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterable
 
 from dishka import AnyOf, Provider, Scope, from_context, provide
+from faststream.kafka import KafkaBroker
 from redis.asyncio import Redis, from_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -27,6 +28,7 @@ from auth_service.infrastructure.persistence.sqlalchemy.user_repository import S
 
 class AppProvider(Provider):
     config = from_context(provides=Settings, scope=Scope.APP)
+    broker = from_context(provides=KafkaBroker, scope=Scope.APP)
 
     @provide(scope=Scope.APP)
     def get_session_maker(self, config: Settings) -> async_sessionmaker[AsyncSession]:

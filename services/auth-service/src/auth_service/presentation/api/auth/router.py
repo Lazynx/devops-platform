@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 import httpx
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
+from faststream.kafka import KafkaBroker
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -60,6 +61,7 @@ async def github_callback(
     code: str,
     request: Request,
     interactor: FromDishka[GitHubOAuthLoginInteractor],
+    broker: FromDishka[KafkaBroker],
 ) -> RedirectResponse:
     try:
         input_dto = OAuthCallbackInputDTO(
@@ -75,6 +77,18 @@ async def github_callback(
             'expires_in': str(result_dto.expires_in),
         }
         logger.info(f'GitHub OAuth callback redirect: {redirect_params}')
+        
+        publisher = broker.publisher("service-logs")
+        from datetime import datetime, UTC
+        await publisher.publish({
+            "service": "auth-service",
+            "level": "INFO",
+            "message": f"User logged in via GitHub",
+            "action": "user.login",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "environment": "development"
+        })
+
         redirect_url = f'{settings.frontend_url}/auth/callback?{urlencode(redirect_params)}'
 
         redirect_response = RedirectResponse(
@@ -87,8 +101,8 @@ async def github_callback(
             value=result_dto.refresh_token,
             max_age=30 * 24 * 60 * 60,
             httponly=True,
-            secure=False,
-            samesite='lax',
+            secure=True,
+            samesite='none',
             path='/',
         )
 
@@ -122,10 +136,22 @@ async def logout(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     response: Response,
     interactor: FromDishka[LogoutInteractor],
+    broker: FromDishka[KafkaBroker],
 ) -> LogoutResponse:
     try:
         input_dto = LogoutInputDTO(token=credentials.credentials)
         await interactor(input_dto)
+
+        publisher = broker.publisher("service-logs")
+        from datetime import datetime, UTC
+        await publisher.publish({
+            "service": "auth-service",
+            "level": "INFO",
+            "message": f"User logged out",
+            "action": "user.logout",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "environment": "development"
+        })
 
         response.delete_cookie(
             key='refresh_token',
