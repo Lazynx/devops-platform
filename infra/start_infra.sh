@@ -69,8 +69,18 @@ brew services start postgresql@14
 echo "Starting Redis..."
 brew services start redis
 
-echo "Starting Kafka..."
-brew services start kafka
+echo "Starting Kafka with SASL authentication..."
+if ! pgrep -f "kafka.Kafka" >/dev/null; then
+    # Use absolute path to JAAS configuration
+    JAAS_CONFIG="/Users/Lazynx/VSC/kbtu/devops-platform/infra/kafka_server_jaas.conf"
+
+    export KAFKA_OPTS="-Djava.security.auth.login.config=$JAAS_CONFIG"
+    nohup kafka-server-start /opt/homebrew/etc/kafka/server.properties > "$LOG_DIR/kafka.log" 2>&1 &
+    echo "Kafka started with SASL. Logs at $LOG_DIR/kafka.log"
+    sleep 5
+else
+    echo "Kafka is already running."
+fi
 
 echo "Starting Nexus..."
 if ! pgrep -f "org.sonatype.nexus.karaf.NexusMain" >/dev/null; then

@@ -29,7 +29,9 @@ class KafkaConfig(BaseSettings):
         env_prefix='KAFKA_',
         env_file=ENV_FILE,
     )
-    bootstrap_servers: str = 'localhost:9092'
+    bootstrap_servers: str = 'localhost:9094'
+    username: str = 'devops_platform'
+    password: str = 'platform-secret'
 
 
 class Settings(BaseSettings):

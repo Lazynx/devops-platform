@@ -27,7 +27,8 @@ echo "Stopping OpenSearch..."
 brew services stop opensearch
 
 echo "Stopping Kafka..."
-brew services stop kafka
+pkill -TERM -f "kafka.Kafka"
+sleep 2
 
 echo "Stopping Redis..."
 brew services stop redis

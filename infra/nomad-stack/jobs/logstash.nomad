@@ -18,7 +18,7 @@ job "logstash" {
         command = "bash"
         args = [
           "-c",
-          "export LS_JAVA_OPTS='-Xms1g -Xmx2g' && /opt/homebrew/bin/logstash -f ${NOMAD_TASK_DIR}/logstash.conf"
+          "export LS_JAVA_OPTS='-Xms1g -Xmx2g' && /opt/homebrew/bin/logstash --path.data ${NOMAD_ALLOC_DIR}/data -f ${NOMAD_TASK_DIR}/logstash.conf"
         ]
       }
 
@@ -30,6 +30,9 @@ input {
     topics => ["service-logs"]
     codec => "json"
     auto_offset_reset => "latest"
+    security_protocol => "SASL_PLAINTEXT"
+    sasl_mechanism => "PLAIN"
+    sasl_jaas_config => "org.apache.kafka.common.security.plain.PlainLoginModule required username='devops_platform' password='platform-secret';"
   }
 }
 

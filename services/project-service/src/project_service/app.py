@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from faststream.kafka import KafkaBroker
 from faststream.kafka.fastapi import KafkaRouter
+from faststream.security import SASLPlaintext
 
 from project_service.config import Settings, settings
 from project_service.infrastructure.logging import configure_logging
@@ -20,10 +21,16 @@ logger = logging.getLogger(__name__)
 
 configure_logging()
 
+security = SASLPlaintext(
+    username=settings.kafka.username,
+    password=settings.kafka.password,
+)
+
 
 def get_app() -> FastAPI:
     kafka_router = KafkaRouter(
         settings.kafka.bootstrap_servers,
+        security=security,
     )
     kafka_router.include_router(consumer_router)
 

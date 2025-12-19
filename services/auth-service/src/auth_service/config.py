@@ -68,6 +68,8 @@ class KafkaConfig(BaseSettings):
         env_file=ENV_FILE,
     )
     bootstrap_servers: str = ''
+    username: str = 'devops_platform'
+    password: str = 'platform-secret'
 
 
 class Settings(BaseSettings):

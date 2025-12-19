@@ -5,10 +5,10 @@ from dishka import make_async_container
 from dishka.integrations import fastapi as fastapi_integration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from faststream.security import SASLPlaintext
 
 from auth_service.config import Settings, settings
 from auth_service.infrastructure.logging import configure_logging
-from auth_service.infrastructure.persistence.sqlalchemy import mapper_registry
 from auth_service.ioc import AppProvider
 from auth_service.presentation.api.auth import router as auth_router
 from faststream.kafka import KafkaBroker
@@ -19,9 +19,17 @@ logger = logging.getLogger(__name__)
 
 configure_logging()
 
+security = SASLPlaintext(
+    username=settings.kafka.username,
+    password=settings.kafka.password,
+)
+
 
 def get_app() -> FastAPI:
-    kafka_router = KafkaRouter(settings.kafka.bootstrap_servers)
+    kafka_router = KafkaRouter(
+        settings.kafka.bootstrap_servers,
+        security=security,
+    )
 
     container = make_async_container(
         AppProvider(),
