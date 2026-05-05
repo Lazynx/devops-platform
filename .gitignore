@@ -43,6 +43,9 @@ dist/
 
 # Infrastructure Runtime Data
 infra/nomad-stack/nomad/data/
+infra/nomad-stack/nomad/esdata/
+infra/nomad-stack/nomad/opensearch_data/
+infra/nomad-stack/nomad/builds/
 infra/nomad-stack/consul/data/
 infra/nexus-data/
 infra/nexus/
@@ -52,7 +55,25 @@ infra/kafka-data/
 infra/zookeeper-data/
 infra/postgres-data/
 infra/logs/
+infra/prometheus-data/
+infra/alertmanager-data/
+infra/monitoring/data/
+infra/monitoring/alertmanager-data/
+
+# Sensitive Configuration Files (use .example versions)
+infra/kafka_server_jaas.conf
+infra/monitoring/alertmanager.yml
+
+# Vault data
+infra/vault-data/
+infra/nomad-stack/vault/data/
+
+# Monitoring binaries and distributions
+infra/alertmanager/
+infra/prometheus/
 
 # Other common files
 *.swp
 *.swo
+infra/nomad-stack/nomad-config.hcl
+infra/nomad-stack/consul-config.hcl

@@ -1,0 +1,72 @@
+job "app-{{ .DeploymentID }}" {
+  datacenters = ["dc1"]
+  type        = "service"
+
+  group "app" {
+    count = 1
+
+    network {
+      port "http" {
+        to = {{ .Port }}
+      }
+    }
+
+    task "server" {
+      driver = "docker"
+
+      vault {
+        policies = ["project-{{ .ProjectID }}-read"]
+      }
+{{ if .VaultTemplate }}
+      template {
+        data        = <<EOH
+{{ .VaultTemplate }}
+EOH
+        destination = "secrets/vault.env"
+        env         = true
+      }
+{{ end }}
+      config {
+        image   = {{ .ImageURL | printf "%q" }}
+        ports   = ["http"]
+        command = "sh"
+        args    = ["-c", {{ .StartCommand | printf "%q" }}]
+
+        auth {
+          username       = {{ .RegistryUser | printf "%q" }}
+          password       = {{ .RegistryPassword | printf "%q" }}
+          server_address = {{ .RegistryURL | printf "%q" }}
+        }
+      }
+
+      env {
+        PORT = "{{ .Port }}"
+      }
+
+      service {
+        name         = "app-{{ .DeploymentID }}"
+        port         = "http"
+        address_mode = "host"
+
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.app-{{ .DeploymentID }}.rule=Host(`{{ .Hostname }}`)",
+          "traefik.http.routers.app-{{ .DeploymentID }}.entrypoints=web",
+        ]
+
+        check {
+          type         = "tcp"
+          port         = "http"
+          address_mode = "host"
+          interval     = "10s"
+          timeout      = "2s"
+        }
+      }
+
+      resources {
+        cpu    = 256
+        memory = 256
+      }
+    }
+  }
+}

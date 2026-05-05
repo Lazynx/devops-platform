@@ -307,7 +307,7 @@ class AnalyzeRepositoryInteractor:
         elif 'django' in dependencies:
             framework = 'Django'
             confidence = 'high'
-            start_cmd = 'python manage.py runserver 0.0.0.0:$PORT'
+            start_cmd = 'python manage.py makemigrations && python manage.py runserver 0.0.0.0:$PORT'
             if 'manage.py' in file_names:
                 detected.append('manage.py')
 

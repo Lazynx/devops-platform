@@ -1,0 +1,28 @@
+job "build-{{ .ProjectID }}-{{ .Version }}" {
+  datacenters = ["dc1"]
+  type        = "batch"
+
+  group "build" {
+    count = 1
+
+    task "build-and-push" {
+      driver = "docker"
+
+      config {
+        image        = "docker:cli"
+        args         = ["sh", "-c", {{ .BuildScript | printf "%q" }}]
+        volumes      = ["/var/run/docker.sock:/var/run/docker.sock"]
+        network_mode = "host"
+      }
+
+      env {
+        DOCKER_BUILDKIT = "1"
+      }
+
+      resources {
+        cpu    = 500
+        memory = 512
+      }
+    }
+  }
+}

@@ -1,0 +1,114 @@
+# Lima VM для devops-platform (оптимизирован под Apple Silicon M-series)
+# Использование: limactl start .lima/devops-platform.yaml
+# Shell в VM:    limactl shell devops-platform
+
+vmType: qemu
+os: Linux
+arch: aarch64
+
+cpus: 4
+memory: "8GiB"
+disk: "40GiB"
+
+images:
+  - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
+    arch: aarch64
+
+mounts:
+  - location: "~"
+    writable: true
+  - location: "/tmp/lima"
+    writable: true
+
+portForwards:
+  - guestPort: 4646
+    hostPort: 4646    # Nomad UI
+  - guestPort: 8500
+    hostPort: 8500    # Consul UI
+  - guestPort: 8200
+    hostPort: 8200    # Vault UI
+  - guestPort: 8090
+    hostPort: 8090    # Traefik / сервисы
+  - guestPort: 8083
+    hostPort: 8083    # Nexus UI
+  - guestPort: 8082
+    hostPort: 8082    # Nexus Docker registry
+  - guestPort: 5601
+    hostPort: 5601    # OpenSearch Dashboards
+  - guestPort: 9090
+    hostPort: 9090    # Prometheus
+  - guestPort: 9097
+    hostPort: 9097    # AlertManager
+  - guestPort: 3000
+    hostPort: 3000    # Grafana (когда добавишь)
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq curl wget unzip make git jq
+
+      # Docker
+      if ! command -v docker &>/dev/null; then
+        curl -fsSL https://get.docker.com | sh
+        usermod -aG docker ubuntu
+        systemctl enable --now docker
+      fi
+
+      # Nomad
+      NOMAD_VERSION="1.8.4"
+      if ! command -v nomad &>/dev/null; then
+        curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_arm64.zip" -o /tmp/nomad.zip
+        unzip -q /tmp/nomad.zip -d /usr/local/bin/
+        chmod +x /usr/local/bin/nomad
+        rm /tmp/nomad.zip
+      fi
+
+      # Consul
+      CONSUL_VERSION="1.19.2"
+      if ! command -v consul &>/dev/null; then
+        curl -fsSL "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_arm64.zip" -o /tmp/consul.zip
+        unzip -q /tmp/consul.zip -d /usr/local/bin/
+        chmod +x /usr/local/bin/consul
+        rm /tmp/consul.zip
+      fi
+
+      # Vault
+      VAULT_VERSION="1.17.5"
+      if ! command -v vault &>/dev/null; then
+        curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_arm64.zip" -o /tmp/vault.zip
+        unzip -q /tmp/vault.zip -d /usr/local/bin/
+        chmod +x /usr/local/bin/vault
+        rm /tmp/vault.zip
+      fi
+
+      # uv (Python package manager, нужен для сервисов)
+      if ! command -v uv &>/dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        ln -sf /root/.cargo/bin/uv /usr/local/bin/uv
+      fi
+
+      echo "Provision complete."
+
+message: |
+  DevOps Platform VM готова.
+
+  Войти в VM:
+    limactl shell devops-platform
+
+  Запустить платформу из VM:
+    cd ~/VSC/kbtu/devops-platform
+    export VAULT_UNSEAL_KEY="<ваш ключ>"
+    make up-infra
+    make up-compose
+    make up-jobs
+
+  UI доступны на Mac (без дополнительных действий):
+    Nomad:   http://localhost:4646
+    Consul:  http://localhost:8500
+    Vault:   http://localhost:8200
+    Traefik: http://localhost:8090
