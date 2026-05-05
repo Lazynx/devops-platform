@@ -5,8 +5,6 @@ if [ -d "infra" ]; then
     NOMAD_CONFIG="infra/nomad-stack/nomad-config.hcl"
     CONSUL_CONFIG="infra/nomad-stack/consul-config.hcl"
     VAULT_CONFIG="infra/nomad-stack/vault-config.hcl"
-    UNSEAL_KEY="qo5qWbYNaFb55Q46yfDd6z/Ob8Rxr0N3NaEJTBswXxA="
-    NEXUS_DIR="infra/nexus"
     LOG_DIR="infra/logs"
     CONSUL_SERVICES_DIR="infra/nomad-stack/consul"
 elif [ -d "nomad-stack" ]; then
@@ -14,14 +12,14 @@ elif [ -d "nomad-stack" ]; then
     NOMAD_CONFIG="nomad-stack/nomad-config.hcl"
     CONSUL_CONFIG="nomad-stack/consul-config.hcl"
     VAULT_CONFIG="nomad-stack/vault-config.hcl"
-    UNSEAL_KEY="qo5qWbYNaFb55Q46yfDd6z/Ob8Rxr0N3NaEJTBswXxA="
-    NEXUS_DIR="nexus"
     LOG_DIR="logs"
     CONSUL_SERVICES_DIR="nomad-stack/consul"
 else
     echo "Error: Cannot find configuration files."
     exit 1
 fi
+
+UNSEAL_KEY="${VAULT_UNSEAL_KEY:?Error: VAULT_UNSEAL_KEY env var is required. Export it before running.}"
 
 mkdir -p "$LOG_DIR"
 
@@ -63,41 +61,13 @@ else
     echo "Vault is already running."
 fi
 
-echo "Starting PostgreSQL..."
-brew services start postgresql@14
+# PostgreSQL, Redis, Kafka, OpenSearch, Nexus управляются через Docker Compose.
+# Запускай их отдельно: docker compose -f docker-compose.dev.yml up -d
+# (или через: make up-compose из корня проекта)
 
-echo "Starting Redis..."
-brew services start redis
-
-echo "Starting Kafka with SASL authentication..."
-if ! pgrep -f "kafka.Kafka" >/dev/null; then
-    # Use absolute path to JAAS configuration
-    JAAS_CONFIG="/Users/Lazynx/VSC/kbtu/devops-platform/infra/kafka_server_jaas.conf"
-
-    export KAFKA_OPTS="-Djava.security.auth.login.config=$JAAS_CONFIG"
-    nohup kafka-server-start /opt/homebrew/etc/kafka/server.properties > "$LOG_DIR/kafka.log" 2>&1 &
-    echo "Kafka started with SASL. Logs at $LOG_DIR/kafka.log"
-    sleep 5
-else
-    echo "Kafka is already running."
-fi
-
-echo "Starting Nexus..."
-if ! pgrep -f "org.sonatype.nexus.karaf.NexusMain" >/dev/null; then
-    "$NEXUS_DIR/bin/nexus" start
-    echo "Nexus started. UI: http://localhost:8083"
-else
-    echo "Nexus is already running."
-fi
-
-echo "Starting OpenSearch..."
-brew services start opensearch
-
-sleep 5
+sleep 2
 
 echo "Registering services with Consul..."
-consul services register "$CONSUL_SERVICES_DIR/consul-service.json"
-consul services register "$CONSUL_SERVICES_DIR/vault-service.json"
 consul services register "$CONSUL_SERVICES_DIR/postgres-service.json"
 consul services register "$CONSUL_SERVICES_DIR/redis-service.json"
 consul services register "$CONSUL_SERVICES_DIR/kafka-service.json"
@@ -117,4 +87,3 @@ echo "Infrastructure started."
 echo "Consul:  http://localhost:8500"
 echo "Vault:   http://localhost:8200"
 echo "Nomad:   http://localhost:4646"
-echo "Nexus:   http://localhost:8083"

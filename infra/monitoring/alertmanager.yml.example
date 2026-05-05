@@ -1,0 +1,43 @@
+global:
+  resolve_timeout: 1h  # Увеличен, чтобы не резолвить алерты преждевременно
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'telegram'
+
+receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - bot_token: 'YOUR_BOT_TOKEN_HERE'
+        chat_id: YOUR_CHAT_ID_HERE
+        parse_mode: 'HTML'
+        message: |
+          {{ if eq .Status "firing" }}🔥 <b>FIRING</b>{{ else }}✅ <b>RESOLVED</b>
+          ⚠️ <i>Внимание: алерт может быть auto-resolved из-за отсутствия метрик. Проверьте статус сервиса вручную!</i>{{ end }}
+
+          {{ range .Alerts }}
+          <b>Alert:</b> {{ .Labels.alertname }}
+          <b>Severity:</b> {{ .Labels.severity }}
+
+          {{ if .Labels.job }}<b>Job:</b> {{ .Labels.job }}{{ end }}
+          {{ if .Labels.service_name }}<b>Service:</b> {{ .Labels.service_name }}{{ end }}
+
+          <b>Instance:</b> {{ .Labels.instance }}
+
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+
+          <b>Started:</b> {{ .StartsAt }}
+          {{ if eq .Status "resolved" }}<b>Ended:</b> {{ .EndsAt }}{{ end }}
+          ━━━━━━━━━━━━━━━━━━━━━━
+          {{ end }}
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']

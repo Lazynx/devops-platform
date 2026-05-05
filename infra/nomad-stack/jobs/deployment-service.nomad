@@ -1,3 +1,8 @@
+variable "project_root" {
+  type        = string
+  description = "Absolute path to the project root directory."
+}
+
 job "deployment-service" {
   datacenters = ["dc1"]
   type = "service"
@@ -37,7 +42,7 @@ EOH
         command = "/bin/bash"
         args = [
           "-c",
-          "cd /Users/Lazynx/VSC/kbtu/devops-platform/services/deployment-service && uv run uvicorn deployment_service.app:get_app --factory --host 127.0.0.1 --port ${NOMAD_PORT_http} --reload"
+          "cd ${var.project_root}/services/deployment-service-py && uv run uvicorn deployment_service.app:get_app --factory --host 127.0.0.1 --port ${NOMAD_PORT_http} --reload"
         ]
       }
 

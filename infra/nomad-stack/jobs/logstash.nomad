@@ -30,9 +30,6 @@ input {
     topics => ["service-logs"]
     codec => "json"
     auto_offset_reset => "latest"
-    security_protocol => "SASL_PLAINTEXT"
-    sasl_mechanism => "PLAIN"
-    sasl_jaas_config => "org.apache.kafka.common.security.plain.PlainLoginModule required username='devops_platform' password='platform-secret';"
   }
 }
 

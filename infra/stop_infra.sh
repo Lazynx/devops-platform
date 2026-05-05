@@ -15,25 +15,16 @@ echo "Stopping Consul..."
 pkill -TERM consul
 sleep 2
 
-echo "Stopping Nexus..."
-if [ -d "infra" ]; then
-    infra/nexus/bin/nexus stop
-elif [ -d "nexus" ]; then
-    nexus/bin/nexus stop
-fi
-sleep 2
+echo "Stopping Prometheus..."
+pkill -x prometheus
+sleep 1
 
-echo "Stopping OpenSearch..."
-brew services stop opensearch
-
-echo "Stopping Kafka..."
-pkill -TERM -f "kafka.Kafka"
-sleep 2
-
-echo "Stopping Redis..."
-brew services stop redis
-
-echo "Stopping PostgreSQL..."
-brew services stop postgresql@14
+echo "Stopping Alertmanager..."
+pkill -x alertmanager
+sleep 1
 
 echo "Infrastructure stopped."
+echo ""
+echo "Note: Stateful services (Postgres, Redis, Kafka, OpenSearch, Nexus) are managed"
+echo "      by Docker Compose. Stop them with: docker compose -f docker-compose.dev.yml down"
+echo "      or via Makefile: make down-compose"

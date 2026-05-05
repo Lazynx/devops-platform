@@ -1,3 +1,8 @@
+variable "project_root" {
+  type        = string
+  description = "Absolute path to the project root directory."
+}
+
 job "auth-service" {
   datacenters = ["dc1"]
   type = "service"
@@ -41,7 +46,7 @@ EOH
         command = "/bin/bash"
         args = [
           "-c",
-          "cd /Users/Lazynx/VSC/kbtu/devops-platform/services/auth-service && uv run uvicorn auth_service.app:get_app --factory --host 127.0.0.1 --port ${NOMAD_PORT_http} --reload"
+          "cd ${var.project_root}/services/auth-service && uv run uvicorn auth_service.app:get_app --factory --host 127.0.0.1 --port ${NOMAD_PORT_http} --reload"
         ]
       }
 
@@ -49,7 +54,7 @@ EOH
         name = "auth-service"
         port = "http"
         address = "127.0.0.1"
-        
+
         tags = [
           "traefik.enable=true",
           "traefik.http.routers.auth-service.rule=Host(`auth-service.localhost`)",
@@ -63,6 +68,11 @@ EOH
           timeout = "2s"
           method = "GET"
         }
+      }
+
+      resources {
+        cpu    = 500
+        memory = 512
       }
     }
   }

@@ -28,12 +28,12 @@ EOH
         command = "/bin/bash"
         args = [
           "-c",
-          "cd /Users/Lazynx/VSC/kbtu/devops-platform/services/project-service && uv run alembic upgrade head"
+          "cd ${var.project_root}/services/project-service && uv run alembic upgrade head"
         ]
       }
 
       env {
-        PYTHONPATH = "/Users/Lazynx/VSC/kbtu/devops-platform/services/project-service/src"
+        PYTHONPATH = "${var.project_root}/services/project-service/src"
       }
 
       resources {

@@ -1,26 +1,40 @@
 #!/bin/bash
+set -euo pipefail
 
-echo "Starting Traefik..."
-nomad job run nomad-stack/jobs/traefik.nomad
+if [ -d "infra" ]; then
+  JOBS_DIR="infra/nomad-stack/jobs"
+  PROJECT_ROOT="$(pwd)"
+elif [ -d "nomad-stack" ]; then
+  JOBS_DIR="nomad-stack/jobs"
+  PROJECT_ROOT="$(cd .. && pwd)"
+else
+  echo "Error: run from project root or infra directory."
+  exit 1
+fi
+
+run_job() {
+  local job_file="$1"
+  echo "Submitting $(basename $job_file)..."
+  nomad job run -var="project_root=$PROJECT_ROOT" "$job_file"
+}
+
+run_job_no_var() {
+  local job_file="$1"
+  echo "Submitting $(basename $job_file)..."
+  nomad job run "$job_file"
+}
+
+run_job_no_var "$JOBS_DIR/traefik.nomad"
 sleep 5
 
-echo "Starting Auth Service..."
-nomad job run nomad-stack/jobs/auth-service.nomad
-
-echo "Starting Secrets Service..."
-nomad job run nomad-stack/jobs/secrets-service.nomad
+run_job "$JOBS_DIR/auth-service.nomad"
+run_job "$JOBS_DIR/secrets-service.nomad"
 sleep 5
 
-echo "Starting Project Service..."
-nomad job run nomad-stack/jobs/project-service.nomad
+run_job "$JOBS_DIR/project-service.nomad"
+run_job "$JOBS_DIR/deployment-service.nomad"
 
-echo "Starting Deployment Service..."
-nomad job run nomad-stack/jobs/deployment-service.nomad
-
-echo "Starting Logstash..."
-nomad job run nomad-stack/jobs/logstash.nomad
-
-echo "Starting OpenSearch Dashboards..."
-nomad job run nomad-stack/jobs/opensearch-dashboards.nomad
+run_job_no_var "$JOBS_DIR/logstash.nomad"
+run_job_no_var "$JOBS_DIR/opensearch-dashboards.nomad"
 
 echo "All jobs submitted."
