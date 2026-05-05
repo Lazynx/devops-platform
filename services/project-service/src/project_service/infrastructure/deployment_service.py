@@ -68,15 +68,15 @@ class DeploymentServiceClient:
 
         except httpx.TimeoutException as e:
             logger.error(f'Deployment service timeout for project {project_id}')
-            raise DeploymentServiceTimeoutError(f'Timeout calling deployment-service: {e}')
+            raise DeploymentServiceTimeoutError(f'Timeout calling deployment-service: {e}') from e
 
         except httpx.HTTPStatusError as e:
             logger.error(f'Deployment service call failed: {e.response.status_code} - {e.response.text}')
             raise DeploymentServiceError(
                 message=f'Deployment service error: {e.response.text}',
                 status_code=e.response.status_code,
-            )
+            ) from e
 
         except Exception as e:
             logger.error(f'Unexpected error calling deployment-service: {e}')
-            raise DeploymentServiceError(message=str(e))
+            raise DeploymentServiceError(message=str(e)) from e

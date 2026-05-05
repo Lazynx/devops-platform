@@ -75,4 +75,4 @@ class TriggerDeploymentConfigInteractor:
                 correlation_id=correlation_id,
             )
 
-            raise DeploymentConfigCreationError(project_id, error_message)
+            raise DeploymentConfigCreationError(project_id, error_message) from e

@@ -92,7 +92,7 @@ class JWTService:
                 exp=payload['exp'],
             )
         except jwt.InvalidTokenError as e:
-            raise ValueError(f'Invalid access token: {e!s}')
+            raise ValueError(f'Invalid access token: {e!s}') from e
 
     def verify_refresh_token(self, token: str) -> RefreshTokenPayload:
         try:
@@ -107,4 +107,4 @@ class JWTService:
                 exp=payload['exp'],
             )
         except jwt.InvalidTokenError as e:
-            raise ValueError(f'Invalid refresh token: {e!s}')
+            raise ValueError(f'Invalid refresh token: {e!s}') from e

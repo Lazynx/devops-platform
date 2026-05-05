@@ -48,7 +48,8 @@ class GithubOauthProvider(BaseOAuthProvider):
             )
 
             if response.status_code != 200:
-                error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {'error': response.text}
+                is_json = response.headers.get('content-type', '').startswith('application/json')
+                error_data = response.json() if is_json else {'error': response.text}
                 raise ValueError(f'GitHub OAuth error: {error_data}')
 
 

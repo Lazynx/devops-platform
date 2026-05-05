@@ -92,7 +92,12 @@ async def handle_deployment_config_created(
 ) -> None:
     logger.info('Received deployment.config_created', extra={'project_id': event.project_id})
     try:
-        await interactor.execute(project_id=event.project_id, config_id=event.config_id, auto_deploy=event.auto_deploy, correlation_id=event.correlation_id)
+        await interactor.execute(
+            project_id=event.project_id,
+            config_id=event.config_id,
+            auto_deploy=event.auto_deploy,
+            correlation_id=event.correlation_id,
+        )
     except Exception as e:
         logger.error('Failed to handle deployment.config_created', extra={'project_id': event.project_id, 'error': str(e)}, exc_info=True)
         await broker.publish(_dlq('deployment.config_created', event, e), DLQ_TOPIC)
