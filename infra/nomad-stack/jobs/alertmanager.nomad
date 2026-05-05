@@ -1,3 +1,8 @@
+variable "project_root" {
+  type        = string
+  description = "Absolute path to the project root directory."
+}
+
 job "alertmanager" {
   datacenters = ["dc1"]
   type = "service"

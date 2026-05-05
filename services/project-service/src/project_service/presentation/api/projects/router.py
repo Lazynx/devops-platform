@@ -104,7 +104,7 @@ async def get_project_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Project {project_id} not found",
-        )
+        ) from None
 @router.get(
     '/{project_id}/status/poll',
     summary='Long poll for project status change',
@@ -188,7 +188,7 @@ async def poll_project_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Project {project_id} not found",
-        )
+        ) from None
 @router.delete(
     '/{project_id}',
     summary='Delete a project',
@@ -206,4 +206,4 @@ async def delete_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Project {project_id} not found",
-        )
+        ) from None

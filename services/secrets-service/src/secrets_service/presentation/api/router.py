@@ -49,8 +49,8 @@ async def create_secret(
 
         return SecretResponse.from_dto(result)
     except Exception as e:
-        logger.error(f'Failed to create secret: {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error('Failed to create secret: %s', e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.post('/bulk', response_model=list[SecretResponse], status_code=status.HTTP_201_CREATED)
@@ -77,8 +77,8 @@ async def create_bulk_secrets(
 
         return [SecretResponse.from_dto(result) for result in results]
     except Exception as e:
-        logger.error(f'Failed to create bulk secrets: {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error('Failed to create bulk secrets: %s', e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.get('/project/{project_id}', response_model=list[SecretResponse])
@@ -90,8 +90,8 @@ async def get_secrets_by_project(
         secrets = await interactor.execute(project_id)
         return [SecretResponse.from_dto(s) for s in secrets]
     except Exception as e:
-        logger.error(f'Failed to get secrets: {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error('Failed to get secrets: %s', e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.get('/deployment/{deployment_id}', response_model=list[SecretWithValueResponse])
@@ -103,8 +103,8 @@ async def get_secrets_by_deployment(
         secrets = await interactor.execute(deployment_id)
         return [SecretWithValueResponse.from_dto(s) for s in secrets]
     except Exception as e:
-        logger.error(f'Failed to get secrets: {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error('Failed to get secrets: %s', e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.get('/{secret_id}', response_model=SecretWithValueResponse)
@@ -116,10 +116,10 @@ async def get_secret_value(
         secret = await interactor.execute(secret_id)
         return SecretWithValueResponse.from_dto(secret)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except Exception as e:
-        logger.error(f'Failed to get secret: {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error('Failed to get secret: %s', e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.put('/{secret_id}', response_model=SecretResponse)
@@ -135,10 +135,10 @@ async def update_secret(
 
         return SecretResponse.from_dto(result)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except Exception as e:
-        logger.error(f'Failed to update secret: {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error('Failed to update secret: %s', e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.delete('/{secret_id}', response_model=DeleteSecretResponse)
@@ -152,7 +152,7 @@ async def delete_secret(
 
         return DeleteSecretResponse(message='Secret deleted successfully')
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except Exception as e:
-        logger.error(f'Failed to delete secret: {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        logger.error('Failed to delete secret: %s', e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e

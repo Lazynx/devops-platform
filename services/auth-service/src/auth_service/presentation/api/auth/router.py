@@ -76,17 +76,17 @@ async def github_callback(
             'access_token': result_dto.access_token,
             'expires_in': str(result_dto.expires_in),
         }
-        logger.info(f'GitHub OAuth callback redirect: {redirect_params}')
-        
-        publisher = broker.publisher("service-logs")
-        from datetime import datetime, UTC
+        logger.info('GitHub OAuth callback redirect: %s', redirect_params)
+
+        from datetime import UTC, datetime
+        publisher = broker.publisher('service-logs')
         await publisher.publish({
-            "service": "auth-service",
-            "level": "INFO",
-            "message": f"User logged in via GitHub",
-            "action": "user.login",
-            "timestamp": datetime.now(UTC).isoformat(),
-            "environment": "development"
+            'service': 'auth-service',
+            'level': 'INFO',
+            'message': 'User logged in via GitHub',
+            'action': 'user.login',
+            'timestamp': datetime.now(UTC).isoformat(),
+            'environment': 'development',
         })
 
         redirect_url = f'{settings.frontend_url}/auth/callback?{urlencode(redirect_params)}'
@@ -111,18 +111,18 @@ async def github_callback(
     except httpx.HTTPStatusError as e:
         logger.error(
             'GitHub OAuth HTTP error',
-            extra={'status_code': e.response.status_code}
+            extra={'status_code': e.response.status_code},
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='OAuth provider error',
-        )
+        ) from e
     except Exception as e:
-        logger.error(f'GitHub OAuth failed, {e}', exc_info=True)
+        logger.error('GitHub OAuth failed: %s', e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='OAuth authentication failed',
-        )
+        ) from e
 
 
 @router.post(
@@ -142,15 +142,15 @@ async def logout(
         input_dto = LogoutInputDTO(token=credentials.credentials)
         await interactor(input_dto)
 
-        publisher = broker.publisher("service-logs")
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
+        publisher = broker.publisher('service-logs')
         await publisher.publish({
-            "service": "auth-service",
-            "level": "INFO",
-            "message": f"User logged out",
-            "action": "user.logout",
-            "timestamp": datetime.now(UTC).isoformat(),
-            "environment": "development"
+            'service': 'auth-service',
+            'level': 'INFO',
+            'message': 'User logged out',
+            'action': 'user.logout',
+            'timestamp': datetime.now(UTC).isoformat(),
+            'environment': 'development',
         })
 
         response.delete_cookie(
@@ -160,11 +160,11 @@ async def logout(
 
         return LogoutResponse(message='Successfully logged out')
     except ValueError as e:
-        logger.error(f'{e}')
+        logger.error('%s', e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Invalid token',
-        )
+        ) from e
 
 
 @router.post(
@@ -193,7 +193,7 @@ async def refresh_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
-        )
+        ) from e
 
 
 @router.get(
@@ -211,12 +211,12 @@ async def get_me(
         input_dto = GetUserInputDTO(token=credentials.credentials)
         result_dto = await interactor(input_dto)
         return UserResponse.from_dto(result_dto)
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Invalid authentication credentials',
             headers={'WWW-Authenticate': 'Bearer'},
-        )
+        ) from e
 
 
 @router.get(
@@ -236,14 +236,14 @@ async def get_github_token(
 
         return GitHubTokenResponse(github_token=result_dto.github_token)
     except ValueError as e:
-        logger.error(f'Failed to get GitHub token: {e}')
+        logger.error('Failed to get GitHub token: %s', e)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
-        logger.error(f'Unexpected error getting GitHub token: {e}', exc_info=True)
+        logger.error('Unexpected error getting GitHub token: %s', e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Failed to retrieve GitHub token',
-        )
+        ) from e

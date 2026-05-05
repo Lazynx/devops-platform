@@ -1,411 +1,311 @@
 # DevOps Platform
 
-A unified self-service platform for automated CI/CD pipelines, environment provisioning, and deployment management. This platform enables developers to deploy containerized applications with automated builds, secret management, and service discovery.
+A self-hosted application deployment platform — point it at any GitHub repository and it builds, containerises, and deploys the app to your own infrastructure. Built to demonstrate production-grade microservices, event-driven architecture, and infrastructure-as-code.
 
-## Project Overview
-
-This platform provides a complete DevOps solution for managing the entire application lifecycle from code to deployment. It combines multiple HashiCorp tools (Nomad, Consul, Vault) with modern observability and artifact management systems to create a production-ready deployment platform.
-
-### Key Features
-
-- **Self-Service Deployments**: Automated build and deployment pipeline triggered via REST API
-- **GitHub Integration**: Direct integration with GitHub repositories for source code management
-- **Secret Management**: Secure storage and injection of application secrets via HashiCorp Vault
-- **Service Discovery**: Automatic service registration and DNS-based discovery with Consul
-- **Dynamic Routing**: HTTP routing and load balancing with Traefik
-- **Artifact Registry**: Docker image storage and management with Sonatype Nexus
-- **Observability**: Centralized logging with OpenSearch, Logstash, and OpenSearch Dashboards
-- **Event-Driven Architecture**: Asynchronous service communication via Apache Kafka
+---
 
 ## Architecture
 
-### Technology Stack
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                       Traefik (API Gateway)                        │
+│            Host-based routing via Consul service catalog           │
+└──────┬───────────────┬──────────────┬───────────────┬─────────────┘
+       │               │              │               │
+ ┌─────▼──────┐ ┌──────▼─────┐ ┌─────▼──────┐ ┌─────▼──────────┐
+ │auth-service│ │project-svc │ │secrets-svc │ │deployment-svc  │
+ │  Python    │ │  Python    │ │  Python    │ │      Go        │
+ │  :8000     │ │  :8001     │ │  :8003     │ │  :8005         │
+ └─────┬──────┘ └──────┬─────┘ └─────┬──────┘ └──────┬─────────┘
+       │               │              │               │
+       └───────────────┴──────────────┴───────────────┘
+                               │
+               ┌───────────────▼───────────────┐
+               │    Apache Kafka (KRaft + SASL) │
+               └───────────────┬───────────────┘
+                               │
+          ┌────────────────────┼──────────────────┐
+          │                    │                  │
+   ┌──────▼──────┐    ┌────────▼───────┐  ┌──────▼──────┐
+   │  PostgreSQL │    │ Nomad+Consul   │  │   Vault     │
+   │  (per svc)  │    │ (orchestrator) │  │  (secrets)  │
+   └─────────────┘    └────────────────┘  └─────────────┘
+```
 
-#### Orchestration and Scheduling
-- **Nomad**: Lightweight workload orchestrator for running Docker containers and batch jobs
-- **Consul**: Service mesh providing service discovery, health checking, and KV store
-- **Vault**: Secrets management with dynamic secret generation and secure storage
+### End-to-end deployment flow
 
-#### Networking and Routing
-- **Traefik**: Cloud-native API gateway and reverse proxy with automatic service discovery
-- **Consul DNS**: DNS-based service discovery (*.service.consul)
+```
+User  ──POST /projects──▶  project-service
+                                │
+                        project.created (Kafka)
+                                │
+                         secrets-service  ◀── stores in Vault
+                                │
+                        secrets.bulk_created (Kafka)
+                                │
+                         deployment-service (Go)
+                           ├── Submit build job ──▶ Nomad
+                           │     └── Docker build + push to Nexus
+                           └── Submit deploy job ──▶ Nomad
+                                 └── Container running, Consul registered
+                                       │
+                                 Traefik picks up route
+                                       │
+                              ✅ App live at {project}.localhost:8090
+```
 
-#### Data Storage
-- **PostgreSQL**: Relational database for platform services (auth, projects, deployments, secrets)
-- **Apache Kafka**: Distributed event streaming platform for inter-service communication
+---
 
-#### Artifact Management
-- **Sonatype Nexus**: Universal artifact repository serving as Docker registry
+## Services
 
-#### Observability
-- **OpenSearch**: Distributed search and analytics engine for log storage
-- **Logstash**: Data processing pipeline for log ingestion and transformation
-- **OpenSearch Dashboards**: Visualization and exploration interface for logs and metrics
+| Service | Language | Port | Responsibility |
+|---|---|---|---|
+| `auth-service` | Python / FastAPI | 8000 | GitHub OAuth, JWT issue/refresh, session management (Redis) |
+| `project-service` | Python / FastAPI | 8001 | Project CRUD, repository framework detection, status aggregation |
+| `secrets-service` | Python / FastAPI | 8003 | Secret CRUD, Vault KV storage, bulk provisioning |
+| `deployment-service` | **Go** / net/http | 8005 | Build pipeline, Nomad job orchestration, log streaming |
 
-#### Application Runtime
-- **Docker**: Container runtime for application isolation
-- **Python 3.12**: Primary programming language for microservices
-- **FastAPI**: Modern async web framework for REST APIs
-- **FastStream**: Framework for building event-driven microservices
+---
 
-## Platform Services
+## Tech Stack
 
-### Authentication Service
-Handles user authentication and authorization with GitHub OAuth integration.
+| Layer | Technology | Why |
+|---|---|---|
+| API gateway | Traefik | Consul catalog integration, zero-config routing |
+| Message broker | Kafka (KRaft, SASL/PLAIN) | At-least-once delivery, replay via DLQ topics |
+| Orchestrator | HashiCorp Nomad | Simpler than k8s, first-class Vault/Consul integration |
+| Service mesh | HashiCorp Consul | DNS-based discovery, health checks |
+| Secrets | HashiCorp Vault | KV v2, per-project policies, Nomad workload identity |
+| Container registry | Sonatype Nexus | Self-hosted Docker registry |
+| Database | PostgreSQL 16 | One database per service (schema isolation) |
+| Cache / sessions | Redis 7 | JWT blocklist, session store |
+| Observability | Prometheus + Alertmanager + OpenSearch + Logstash | Metrics + structured logs |
+| Go Kafka client | franz-go | Manual offset commit, DLQ on failure |
+| Python DI | Dishka | Async IoC container for FastAPI |
+| Python messaging | FastStream | Kafka consumer/producer DSL |
 
-**Technologies**: FastAPI, SQLAlchemy, Redis, JWT
+---
 
-**Responsibilities**:
-- GitHub OAuth authentication flow
-- JWT token generation and validation
-- Session management
-- User profile management
-
-### Project Service
-Manages project lifecycle and repository analysis.
-
-**Technologies**: FastAPI, SQLAlchemy, GitHub API
-
-**Responsibilities**:
-- Project CRUD operations
-- GitHub repository analysis and framework detection
-- Project configuration management
-- Deployment status tracking
-
-### Secrets Service
-Manages application secrets and environment variables.
-
-**Technologies**: FastAPI, HashiCorp Vault, Kafka
-
-**Responsibilities**:
-- Secret storage in Vault KV v2
-- Per-project Vault policy management
-- Bulk secret creation and updates
-- Secret encryption and access control
-
-### Deployment Service
-Orchestrates application builds and deployments.
-
-**Technologies**: FastAPI, Nomad API, Docker, Nexus
-
-**Responsibilities**:
-- Docker image build job generation
-- Application deployment job generation
-- Nomad job lifecycle management
-- Build artifact management
-- Deployment configuration
-
-## Deployment Workflow
-
-1. **Project Creation**
-   - User creates project via REST API with GitHub repository URL
-   - Project Service analyzes repository structure and detects framework
-   - Event published to Kafka: `project.created_with_secrets`
-
-2. **Secret Management**
-   - Secrets Service receives event
-   - Stores secrets in Vault with project-specific path
-   - Creates Vault policy for secure access
-   - Event published: `secrets.bulk_created`
-
-3. **Build Phase**
-   - Deployment Service receives event
-   - Generates Nomad build job with Docker build task
-   - Job clones repository, builds Docker image
-   - Pushes image to Nexus registry
-   - Event published: `deployment.building`
-
-4. **Deploy Phase**
-   - Deployment Service generates deployment job
-   - Nomad schedules container on available node
-   - Vault secrets injected via template mechanism
-   - Dynamic port allocation by Nomad
-   - Service registered in Consul
-   - Event published: `deployment.running`
-
-5. **Service Discovery**
-   - Consul registers service with health checks
-   - Traefik discovers service via Consul catalog
-   - HTTP route created: `{project}-{deployment-id}.localhost:8090`
-
-## Infrastructure Components
-
-### Nomad Configuration
-- **Mode**: Single-node development cluster
-- **Driver**: Docker with privileged mode enabled
-- **Networking**: Dynamic port allocation with bridge networking
-- **Integration**: Vault workload identity for secret injection
-
-### Consul Configuration
-- **Mode**: Single-node development cluster
-- **DNS**: Enabled on `.consul` domain
-- **Services**: HTTP API on port 8500, DNS on port 8600
-- **Storage**: Raft consensus with persistent data
-
-### Vault Configuration
-- **Storage Backend**: Raft integrated storage
-- **KV Engine**: Version 2 secrets engine at path `secret/`
-- **Policies**: Dynamic per-project policies
-- **Integration**: Nomad workload identity authentication
-
-### Traefik Configuration
-- **Entry Points**: HTTP on port 8090
-- **Providers**: Consul Catalog for automatic service discovery
-- **Routing**: Host-based routing rules from Consul tags
-
-### Nexus Configuration
-- **HTTP Port**: 8083 (UI)
-- **Docker Registry**: 8082
-- **Repository**: docker-hosted for image storage
-
-### Kafka Configuration
-- **Broker**: Single-node cluster on port 9092
-- **Topics**: Auto-created on first publish
-- **Consumer Groups**: Configured per service
-
-### PostgreSQL Databases
-- **auth_db**: User authentication data
-- **project_db**: Project metadata and configurations
-- **deployment_db**: Deployment history and configs
-- **secrets_db**: Secret metadata (values in Vault)
-
-## Project Structure
+## Project Layout
 
 ```
 devops-platform/
-├── infra/                          # Infrastructure configuration
+├── services/
+│   ├── auth-service/           # Python, FastAPI, SQLAlchemy ORM, Alembic
+│   ├── project-service/        # Python, FastAPI, CQRS via interactors
+│   ├── secrets-service/        # Python, FastAPI, hvac (Vault), asyncio.to_thread
+│   └── deployment-service/     # Go, Clean Architecture (see below)
+├── infra/
 │   ├── nomad-stack/
-│   │   ├── consul/                 # Consul configuration
-│   │   ├── jobs/                   # Nomad job definitions
-│   │   │   ├── auth-service.nomad
-│   │   │   ├── project-service.nomad
-│   │   │   ├── secrets-service.nomad
-│   │   │   ├── deployment-service.nomad
-│   │   │   ├── traefik.nomad
-│   │   │   └── migrations/         # Database migration jobs
-│   │   ├── nomad-config.hcl        # Nomad agent configuration
-│   │   └── vault-config.hcl        # Vault configuration
-│   ├── start_infra.sh              # Start infrastructure services
-│   ├── start_jobs.sh               # Deploy platform services
-│   ├── stop_infra.sh               # Stop infrastructure
-│   └── stop_jobs.sh                # Stop platform services
-│
-├── services/                       # Microservices
-│   ├── auth-service/
-│   │   ├── src/auth_service/
-│   │   │   ├── application/        # Business logic layer
-│   │   │   ├── domain/             # Domain entities
-│   │   │   ├── infrastructure/     # External integrations
-│   │   │   └── presentation/       # API endpoints
-│   │   ├── migrations/             # Alembic migrations
-│   │   └── pyproject.toml
-│   │
-│   ├── project-service/
-│   │   └── src/project_service/
-│   │       ├── application/
-│   │       │   └── interactors/    # Use cases
-│   │       ├── domain/
-│   │       ├── infrastructure/
-│   │       │   ├── messaging/      # Kafka consumers
-│   │       │   └── sqlalchemy/     # Database repositories
-│   │       └── presentation/
-│   │
-│   ├── secrets-service/
-│   │   └── src/secrets_service/
-│   │       ├── infrastructure/
-│   │       │   └── vault/          # Vault client
-│   │       └── ...
-│   │
-│   └── deployment-service/
-│       └── src/deployment_service/
-│           ├── infrastructure/
-│           │   └── nomad/          # Job generators
-│           └── ...
-│
-└── README.md
+│   │   └── jobs/               # HCL job files; variable "project_root" in every file
+│   ├── monitoring/             # Prometheus rules, Alertmanager config
+│   ├── start_infra.sh          # Vault unseal + daemon bootstrap
+│   └── stop_infra.sh
+├── docker-compose.dev.yml      # Postgres, Redis, Kafka, OpenSearch, Nexus
+├── docker-compose.prod.yml     # Production-hardened compose
+├── .lima/devops-platform.yaml  # ARM64 Ubuntu VM for Mac M4
+├── Makefile
+└── .github/workflows/ci.yml   # Lint → test → nomad validate → docker build
 ```
 
-## API Endpoints
+### Go deployment-service — Clean Architecture
 
-### Authentication Service
-- `POST /api/v1/auth/github` - Initiate GitHub OAuth flow
-- `GET /api/v1/auth/github/callback` - OAuth callback handler
-- `POST /api/v1/auth/logout` - User logout
-- `GET /api/v1/system/health` - Health check
+```
+deployment-service/
+├── cmd/api/main.go
+└── internal/
+    ├── domain/              # Deployment, DeploymentConfig, Status, domain errors
+    ├── app/
+    │   ├── port/            # Interfaces: Repository, NomadClient, Publisher, AuthService, SecretsFetcher
+    │   └── usecase/
+    │       ├── command/     # DeployCommand, RetryCommand, StopCommand, CreateConfigCommand
+    │       └── query/       # GetDeployment, ListDeployments, GetLogs
+    ├── infra/
+    │   ├── nomad/           # NomadClient (HTTP), JobBuilder (text/template HCL)
+    │   ├── postgres/        # pgx/v5 repositories, raw SQL
+    │   ├── kafka/           # franz-go publisher
+    │   ├── authclient/      # HTTP → auth-service (token validation)
+    │   └── secretsclient/   # HTTP → secrets-service (fetch env vars for retry)
+    ├── metrics/             # Prometheus: deployments_total, deployment_duration_seconds, active_deployments
+    └── transport/
+        ├── http/            # chi router, typed DTOs, correlation-id middleware
+        └── kafka/           # Consumer: manual commit, DLQ on error, graceful shutdown
+```
 
-### Project Service
-- `POST /api/v1/projects` - Create new project
-- `GET /api/v1/projects` - List user projects
-- `GET /api/v1/projects/{id}` - Get project details
-- `DELETE /api/v1/projects/{id}` - Delete project
-- `POST /api/v1/repositories/analyze` - Analyze GitHub repository
+**Key design decisions:**
 
-### Secrets Service
-- `POST /api/v1/secrets` - Create secret
-- `GET /api/v1/secrets/project/{project_id}` - List project secrets
-- `PUT /api/v1/secrets/{id}` - Update secret
-- `DELETE /api/v1/secrets/{id}` - Delete secret
+- **No ORM in Go** — raw SQL via `pgx/v5` for full query control
+- **App-lifecycle context** — background goroutines use the app `context.Context` passed from `main`, not `context.Background()`; they stop on SIGTERM
+- **DLQ** — failed Kafka events published to `deployment-service.dlq` via a dedicated producer client (separate from the consumer)
+- **Retry with fresh secrets** — `RetryCommand` calls `secrets-service` before re-deploying so env vars are always current
+- **DB-level uniqueness** — `UNIQUE (project_id, environment)` on `deployment_configs` prevents race conditions
+- **Typed HTTP responses** — all handlers return `dto.DeploymentResponse` / `dto.ConfigResponse`; domain internals never leak to the API
 
-### Deployment Service
-- `POST /api/v1/deployments` - Create deployment
-- `GET /api/v1/deployments/project/{project_id}` - List deployments
-- `GET /api/v1/deployments/{id}` - Get deployment details
-- `GET /api/v1/deployments/{id}/logs` - Stream deployment logs
-- `POST /api/v1/deployments/{id}/retry` - Retry failed deployment
+---
 
-## Development Setup
+## Quick Start
 
 ### Prerequisites
-- Python 3.12+
-- Docker
-- Nomad 1.6+
-- Consul 1.16+
-- Vault 1.14+
-- PostgreSQL 15+
-- Apache Kafka 3.5+
-- Sonatype Nexus OSS
 
-### Starting the Platform
+- Docker + Docker Compose
+- Go 1.23+, Python 3.12+, [uv](https://docs.astral.sh/uv/)
+- Nomad, Consul, Vault (or use the Lima VM)
 
-1. **Start infrastructure services**:
+### 1. Stateful services
+
 ```bash
-cd infra
-./start_infra.sh
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-2. **Run database migrations**:
+### 2. Infrastructure (Nomad / Consul / Vault)
+
 ```bash
-./run_migrations.sh
+cp infra/kafka_server_jaas.conf.example infra/kafka_server_jaas.conf
+# fill in KAFKA_USERNAME / KAFKA_PASSWORD
+
+export VAULT_UNSEAL_KEY=<your-key>
+./infra/start_infra.sh
 ```
 
-3. **Deploy platform services**:
+### 3. Services
+
 ```bash
-./start_jobs.sh
+# All at once
+make dev
+
+# Individually
+cd services/auth-service       && uv run uvicorn auth_service.app:app --port 8000 --reload
+cd services/project-service    && uv run uvicorn project_service.app:app --port 8001 --reload
+cd services/secrets-service    && uv run uvicorn secrets_service.app:app --port 8003 --reload
+cd services/deployment-service && go run ./cmd/api/
 ```
 
-4. **Verify services**:
+### Mac M4 — Lima VM
+
 ```bash
-nomad status
-consul catalog services
+limactl start .lima/devops-platform.yaml
+limactl shell devops-platform
 ```
 
-### Accessing Services
+Provisions Docker, Nomad, Consul, Vault, and `uv` on first boot.
 
-- **Nomad UI**: http://localhost:4646
-- **Consul UI**: http://localhost:8500
-- **Vault UI**: http://localhost:8200
-- **Nexus UI**: http://localhost:8083
-- **OpenSearch Dashboards**: http://localhost:5601
-- **Traefik Dashboard**: http://localhost:8090/dashboard/
+---
 
-## Architecture Principles
+## API Reference
 
-### Clean Architecture
-Services follow Clean Architecture principles with clear separation of concerns:
-- **Domain Layer**: Pure business logic and entities
-- **Application Layer**: Use cases and application services
-- **Infrastructure Layer**: External integrations (databases, APIs, message brokers)
-- **Presentation Layer**: HTTP API endpoints and request/response models
+### Auth — `http://localhost:8000`
 
-### SOLID Principles
-- **Single Responsibility**: Each service has a focused domain
-- **Open/Closed**: Extensible through interfaces and dependency injection
-- **Liskov Substitution**: Interface-based design with Dishka DI
-- **Interface Segregation**: Minimal, focused interfaces
-- **Dependency Inversion**: Dependencies injected via IoC container
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/auth/github` | Get GitHub OAuth redirect URL |
+| `GET` | `/api/v1/auth/github/callback` | OAuth callback; sets `refresh_token` HttpOnly cookie |
+| `POST` | `/api/v1/auth/refresh` | Refresh access token from cookie |
+| `POST` | `/api/v1/auth/logout` | Invalidate session |
+| `GET` | `/api/v1/auth/me` | Current user |
+| `GET` | `/api/v1/auth/oauth/github/token` | Retrieve stored GitHub token |
+| `GET` | `/metrics` | Prometheus metrics |
 
-### Event-Driven Architecture
-Services communicate asynchronously via Kafka events to ensure:
-- Loose coupling between services
-- Resilience to service failures
-- Scalability through horizontal scaling
-- Event sourcing for audit trails
+### Projects — `http://localhost:8001`
 
-## Technology Decisions
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/projects/` | List user projects |
+| `POST` | `/api/v1/projects/` | Create project → triggers full deploy flow |
+| `GET` | `/api/v1/projects/{id}/status` | Aggregated status (secrets + deployment) |
+| `GET` | `/api/v1/projects/{id}/status/poll` | Long-poll for status change |
+| `DELETE` | `/api/v1/projects/{id}` | Delete project; emits `project.deleted` |
 
-### Why Nomad over Kubernetes?
-- **Simplicity**: Lower operational complexity for smaller teams
-- **Resource Efficiency**: Minimal overhead compared to Kubernetes
-- **Flexibility**: Supports Docker, raw executables, and custom drivers
-- **Integration**: First-class integration with Consul and Vault
+### Secrets — `http://localhost:8003`
 
-### Why Consul for Service Discovery?
-- **DNS Integration**: Native DNS interface for service discovery
-- **Health Checking**: Built-in health check system
-- **KV Store**: Distributed configuration storage
-- **Service Mesh**: Optional mTLS and traffic management
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/v1/secrets` | Create single secret |
+| `POST` | `/api/v1/secrets/bulk` | Bulk create → triggers deployment |
+| `GET` | `/api/v1/secrets/project/{id}` | List project secrets |
+| `PUT` | `/api/v1/secrets/{id}` | Update secret value |
+| `DELETE` | `/api/v1/secrets/{id}` | Delete secret |
 
-### Why Vault for Secrets?
-- **Dynamic Secrets**: Generate database credentials on-demand
-- **Encryption**: Secure storage with automatic encryption
-- **Access Control**: Fine-grained policies per project
-- **Audit Logging**: Complete audit trail of secret access
+### Deployments — `http://localhost:8005`
 
-### Why FastAPI?
-- **Performance**: Async/await support for high concurrency
-- **Type Safety**: Pydantic models with automatic validation
-- **Documentation**: Auto-generated OpenAPI specs
-- **Modern**: Built on Starlette and Python 3.7+ features
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/v1/deployments/configs` | Create deployment config |
+| `GET` | `/api/v1/deployments/project/{id}` | List project deployments |
+| `POST` | `/api/v1/deployments/project/{id}/retry` | Retry last deployment |
+| `GET` | `/api/v1/deployments/{id}` | Get deployment |
+| `POST` | `/api/v1/deployments/{id}/stop` | Stop running deployment |
+| `GET` | `/api/v1/deployments/{id}/logs` | Stream logs (`?tail=N`) |
+| `GET` | `/metrics` | Prometheus metrics |
 
-## Monitoring and Observability
+---
 
-### Logging
-- **Collection**: Logstash ingests logs from all services
-- **Storage**: OpenSearch stores structured log data
-- **Visualization**: OpenSearch Dashboards for log analysis
-- **Format**: Structured JSON logging with correlation IDs
+## Kafka Topics
 
-### Health Checks
-- **Nomad**: Task-level health checks via HTTP/TCP
-- **Consul**: Service-level health checks with configurable intervals
-- **Application**: `/api/v1/system/health` endpoint per service
+| Topic | Producer | Consumer | Purpose |
+|---|---|---|---|
+| `project.created` | project-service | secrets-service | Trigger secret provisioning |
+| `project.deleted` | project-service | deployment-service, secrets-service | Cascade delete |
+| `secrets.bulk_created` | secrets-service | deployment-service | Trigger build + deploy |
+| `deployment.status_changed` | deployment-service | project-service | Update project status |
+| `service-logs` | all services | logstash | Centralised structured logging |
+| `*.dlq` | each service | — | Dead-letter queue for failed events |
 
-## Security Considerations
+---
 
-### Secret Management
-- Secrets stored in Vault, never in code or environment variables
-- Per-project Vault policies restrict access scope
-- Workload identity for Nomad-Vault integration
+## Observability
 
-### Network Security
-- Services communicate over internal network
-- Traefik as single entry point for external traffic
-- Consul DNS for internal service discovery
+| Tool | URL | Purpose |
+|---|---|---|
+| Prometheus | `http://localhost:9090` | Metrics scraping & querying |
+| Alertmanager | `http://localhost:9097` | Alert routing |
+| OpenSearch Dashboards | `http://localhost:5601` | Log search and visualisation |
+| Traefik dashboard | `http://localhost:8080` | Live routing overview |
+| Nomad UI | `http://localhost:4646` | Job and allocation status |
+| Consul UI | `http://localhost:8500` | Service registry and health |
+| Vault UI | `http://localhost:8200` | Secrets management |
+| Nexus | `http://localhost:8081` | Docker registry UI |
 
-### Authentication
-- GitHub OAuth for user authentication
-- JWT tokens for API authentication
-- Session management with Redis
+Custom business metrics (deployment-service):
 
-## Future Enhancements
+```
+deployments_total{status, environment}
+deployment_duration_seconds{phase}   # build / deploy
+active_deployments{environment}
+```
 
-### Planned Features
-- **Metrics Collection**: Prometheus integration for metrics
-- **Distributed Tracing**: Jaeger for request tracing
-- **Automated Testing**: CI pipeline integration
-- **Blue-Green Deployments**: Zero-downtime deployment strategy
-- **Auto-Scaling**: Dynamic scaling based on metrics
-- **Multi-Tenancy**: Resource quotas and isolation per user
+---
 
-### Observability Improvements
-- Grafana dashboards for metrics visualization
-- Alerting with Prometheus AlertManager
-- Distributed tracing with OpenTelemetry
-- Custom application metrics
+## CI Pipeline
 
-### Infrastructure as Code
-- Terraform for infrastructure provisioning
-- Ansible for configuration management
-- GitOps workflow for deployment automation
+Every push and pull request runs:
 
-## Contributing
+```
+lint-auth-service   ──┐
+lint-project-service──┼──▶ test-auth-service (Postgres + Redis containers)
+lint-secrets-service──┘
+                         validate-nomad-jobs (nomad job validate -var project_root=...)
+                         build-deployment-service-go (go build + go vet + go test -race)
+                         build-docker-images (PR only, matrix: auth / project / secrets)
+```
 
-This is an academic project developed as part of DevOps coursework.
+---
+
+## Environment Variables
+
+| Variable | Service | Description |
+|---|---|---|
+| `JWT_SECRET_KEY` | auth | JWT signing secret |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | auth | GitHub OAuth app |
+| `VAULT_ADDR` / `VAULT_TOKEN` | secrets | Vault connection |
+| `KAFKA_USERNAME` / `KAFKA_PASSWORD` | all | SASL credentials |
+| `KAFKA_BOOTSTRAP_SERVERS` | all | Kafka broker addresses |
+| `NOMAD_URL` | deployment | Nomad API endpoint |
+| `NEXUS_REGISTRY_URL` | deployment | Docker registry |
+| `AUTH_SERVICE_URL` | deployment | auth-service base URL |
+| `SECRETS_SERVICE_URL` | deployment | secrets-service base URL |
+
+---
 
 ## License
 
-This project is developed for educational purposes.
-
-## Contact
-
-For questions or feedback, please refer to the project repository.
+MIT

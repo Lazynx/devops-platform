@@ -242,7 +242,7 @@ class AnalyzeRepositoryInteractor:
             )
 
         except json.JSONDecodeError:
-            logger.error(f'Failed to parse package.json for {owner}/{repo}')
+            logger.error('Failed to parse package.json for %s/%s', owner, repo)
             return None
 
     async def _detect_python_framework(

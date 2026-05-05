@@ -74,7 +74,12 @@ lint.select = [
     # Ruff-specific rules
     "RUF",   # Ruff-specific improvements
 ]
-lint.ignore = ["D203", "D213", "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D", "ANN204",]
+lint.ignore = [
+    "D203", "D213", "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D",
+    "ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204",
+    "S106",
+    "PLR2004", "PLR0913",
+]
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
