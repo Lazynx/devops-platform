@@ -19,15 +19,13 @@ class HandleDeploymentStatusChangedInteractor:
         deployment_url: str | None = None,
     ) -> None:
         logger.info(f"Updating project {project_id} deployment status to {status}")
-        
+
         project = await self._project_repo.get_by_id(UUID(project_id))
         if not project:
             logger.error(f"Project {project_id} not found")
             return
 
-        if status == 'building':
-            project.status = ProjectStatus.deployment_pending
-        elif status == 'deploying':
+        if status == 'building' or status == 'deploying':
             project.status = ProjectStatus.deployment_pending
         elif status == 'running':
             project.status = ProjectStatus.active

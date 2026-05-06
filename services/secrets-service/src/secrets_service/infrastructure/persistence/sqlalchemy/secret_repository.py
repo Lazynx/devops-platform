@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from secrets_service.application.interfaces.secret_repository import SecretRepository

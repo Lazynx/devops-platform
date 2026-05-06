@@ -54,7 +54,7 @@ class SecretEventPublisher:
         )
         await self._secret_created_publisher.publish(event)
 
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
         await self._logs_publisher.publish({
             "service": "secrets-service",
             "level": "INFO",
@@ -83,7 +83,7 @@ class SecretEventPublisher:
         )
         await self._secret_deleted_publisher.publish(event)
 
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
         await self._logs_publisher.publish({
             "service": "secrets-service",
             "level": "INFO",

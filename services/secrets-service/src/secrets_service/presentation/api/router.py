@@ -19,7 +19,6 @@ from secrets_service.presentation.api.schemas import (
     CreateBulkSecretsRequest,
     CreateSecretRequest,
     DeleteSecretResponse,
-    SecretItem,
     SecretResponse,
     SecretWithValueResponse,
     UpdateSecretRequest,

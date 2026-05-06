@@ -21,9 +21,30 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18.2",
     "pytest>=8.4.2",
     "ruff>=0.13.2",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+explicit_package_bases = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_return_any = false
+disable_error_code = ["prop-decorator"]
+enable_error_code = ["truthy-bool", "unused-awaitable", "possibly-undefined"]
+
+[[tool.mypy.overrides]]
+module = [
+    "project_service.application.interactors.create_project",
+    "project_service.application.interactors.delete_project",
+    "project_service.infrastructure.sqlalchemy.project_repository",
+    "project_service.infrastructure.github_service",
+]
+ignore_errors = true
 
 [tool.ruff]
 src = ["src"]

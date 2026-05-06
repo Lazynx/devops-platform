@@ -16,9 +16,9 @@ class CreateBulkSecretsInteractor:
 
     async def execute(self, dto: CreateBulkSecretsDTO) -> list[SecretDTO]:
         vault_path = self._build_vault_path(dto.project_id, dto.deployment_id)
-        
+
         all_secrets_data = {s.key: s.value for s in dto.secrets}
-        
+
         await self._vault_client.write_secret(vault_path, all_secrets_data)
 
         metadata_list = []

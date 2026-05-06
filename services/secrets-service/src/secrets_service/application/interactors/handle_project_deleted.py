@@ -29,7 +29,7 @@ class HandleProjectDeletedInteractor:
                 await self._vault_client.delete_secret(secret.vault_path)
             except Exception as e:
                 logger.warning(f"Failed to delete secret {secret.vault_path} from Vault: {e}")
-            
+
             await self._repository.delete(secret.id)
 
         await self._repository._session.commit()

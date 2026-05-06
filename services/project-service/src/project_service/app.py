@@ -4,8 +4,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from dishka import make_async_container
-from dishka.integrations import fastapi as fastapi_integration
-from dishka.integrations import faststream as faststream_integration
+from dishka.integrations import fastapi as fastapi_integration, faststream as faststream_integration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from faststream.kafka import KafkaBroker

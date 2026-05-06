@@ -17,13 +17,13 @@ from auth_service.application.interfaces import (
 )
 from auth_service.config import Settings
 from auth_service.infrastructure.oauth.github_oauth_provider import GithubOauthProvider
-from auth_service.infrastructure.redis.session_repository import RedisSessionRepository
-from auth_service.infrastructure.security.jwt_service import JWTService
 from auth_service.infrastructure.persistence.sqlalchemy.database import new_session_maker
 from auth_service.infrastructure.persistence.sqlalchemy.oauth_connection_repository import (
     SQLAlchemyOAuthConnectionRepository,
 )
 from auth_service.infrastructure.persistence.sqlalchemy.user_repository import SQLAlchemyUserRepository
+from auth_service.infrastructure.redis.session_repository import RedisSessionRepository
+from auth_service.infrastructure.security.jwt_service import JWTService
 
 
 class AppProvider(Provider):

@@ -1,4 +1,3 @@
-from uuid import UUID
 
 from project_service.application.dtos import ProjectDTO
 from project_service.application.interfaces.auth_service import IAuthService

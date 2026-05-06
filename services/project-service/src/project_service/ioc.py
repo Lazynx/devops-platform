@@ -19,13 +19,6 @@ from project_service.application.interactors.get_user_projects import (
 from project_service.application.interactors.get_user_repositories import (
     GetUserRepositoriesInteractor,
 )
-from project_service.application.interactors.trigger_deployment_config import TriggerDeploymentConfigInteractor
-from project_service.application.interactors.handle_secrets_bulk_created import (
-    HandleSecretsBulkCreatedInteractor,
-)
-from project_service.application.interactors.handle_secrets_failed import (
-    HandleSecretsFailedInteractor,
-)
 from project_service.application.interactors.handle_deployment_config_created import (
     HandleDeploymentConfigCreatedInteractor,
 )
@@ -35,6 +28,13 @@ from project_service.application.interactors.handle_deployment_config_failed imp
 from project_service.application.interactors.handle_deployment_status_changed import (
     HandleDeploymentStatusChangedInteractor,
 )
+from project_service.application.interactors.handle_secrets_bulk_created import (
+    HandleSecretsBulkCreatedInteractor,
+)
+from project_service.application.interactors.handle_secrets_failed import (
+    HandleSecretsFailedInteractor,
+)
+from project_service.application.interactors.trigger_deployment_config import TriggerDeploymentConfigInteractor
 from project_service.application.interfaces.auth_service import IAuthService
 from project_service.application.interfaces.github_service import IGitHubService
 from project_service.application.interfaces.project_repository import IProjectRepository

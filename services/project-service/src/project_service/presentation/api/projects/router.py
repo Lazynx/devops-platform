@@ -120,16 +120,15 @@ async def poll_project_status(
     timeout: int = 30,
 ) -> ProjectStatusResponse:
     import asyncio
-    from datetime import datetime
-    
+
     max_timeout = min(timeout, 60)
     poll_interval = 2
     elapsed = 0
-    
+
     try:
         while elapsed < max_timeout:
             status_dto = await interactor.execute(project_id)
-            
+
             # If last_updated_at is not provided, return immediately
             # If status_dto.updated_at is newer than last_updated_at, return immediately
             if last_updated_at is None or status_dto.updated_at > last_updated_at:
@@ -155,10 +154,10 @@ async def poll_project_status(
                         timestamp=status_dto.error.timestamp,
                     ) if status_dto.error else None,
                 )
-            
+
             await asyncio.sleep(poll_interval)
             elapsed += poll_interval
-            
+
         # Timeout reached, return current status
         status_dto = await interactor.execute(project_id)
         return ProjectStatusResponse(

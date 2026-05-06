@@ -145,9 +145,9 @@ class AnalyzeRepositoryInteractor:
         detected = ['package.json']
         framework = 'Node.js'
         confidence = 'medium'
-        install_cmd = 'npm install'
-        build_cmd = 'npm run build'
-        start_cmd = 'npm start'
+        install_cmd: str | None = 'npm install'
+        build_cmd: str | None = 'npm run build'
+        start_cmd: str | None = 'npm start'
 
         file_path = self._build_file_path(root_directory, 'package.json')
         package_json = await self._github_service.get_file_content(github_token, owner, repo, file_path)

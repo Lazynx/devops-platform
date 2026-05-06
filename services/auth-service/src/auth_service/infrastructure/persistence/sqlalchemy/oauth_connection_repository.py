@@ -23,7 +23,7 @@ class SQLAlchemyOAuthConnectionRepository(IOAuthConnectionRepository):
                 OAuthConnection.provider == provider,
             )
         )
-        return result.scalars().first()
+        return result.scalars().one()
 
     async def upsert(self, connection: OAuthConnection) -> OAuthConnection:
         stmt = insert(OAuthConnection).values(

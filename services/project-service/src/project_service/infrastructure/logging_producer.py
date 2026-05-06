@@ -1,7 +1,6 @@
 import asyncio
 import logging
-import json
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from faststream.kafka import KafkaBroker
 
@@ -13,7 +12,7 @@ async def publish_health_logs(broker: KafkaBroker):
     Background task to publish health check logs to Kafka.
     """
     publisher = broker.publisher("service-logs")
-    
+
     while True:
         try:
             log_entry = {
@@ -23,11 +22,11 @@ async def publish_health_logs(broker: KafkaBroker):
                 "timestamp": datetime.now(UTC).isoformat(),
                 "environment": "development"
             }
-            
+
             await publisher.publish(log_entry)
             logger.info("Published health log to Kafka")
-            
+
         except Exception as e:
             logger.error(f"Failed to publish health log: {e}")
-            
+
         await asyncio.sleep(10)

@@ -4,8 +4,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from dishka import make_async_container
-from dishka.integrations import fastapi as fastapi_integration
-from dishka.integrations import faststream as faststream_integration
+from dishka.integrations import fastapi as fastapi_integration, faststream as faststream_integration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from faststream.kafka import KafkaBroker
@@ -14,8 +13,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from secrets_service.config import Settings, settings
 from secrets_service.infrastructure.logging import setup_logging
-from secrets_service.ioc import AppProvider
 from secrets_service.infrastructure.messaging.consumers import router as consumer_router
+from secrets_service.ioc import AppProvider
 from secrets_service.presentation.api.router import router as secret_router
 
 logger = logging.getLogger(__name__)

@@ -35,7 +35,7 @@ class RefreshTokenInteractor:
 
         await self._session_repo.update(session)
 
-        token_pair = self._jwt.create_token_pair(user, payload.session_id)
+        token_pair = self._jwt.create_token_pair(user, UUID(payload.session_id))
 
         return LoginResultDTO(
             user_id=user.id,

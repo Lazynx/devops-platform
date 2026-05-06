@@ -5,10 +5,10 @@ from urllib.parse import urlencode
 import httpx
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
-from faststream.kafka import KafkaBroker
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from faststream.kafka import KafkaBroker
 
 from auth_service.application.dtos import (
     GetGitHubTokenInputDTO,

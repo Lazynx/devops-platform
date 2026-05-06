@@ -2,9 +2,9 @@ import logging
 from uuid import UUID
 
 from project_service.application.interfaces.project_repository import IProjectRepository
-from project_service.infrastructure.messaging.publisher import ProjectEventPublisher
 from project_service.infrastructure.deployment_service import DeploymentServiceClient
 from project_service.infrastructure.messaging.pending_configs_store import PendingConfigsStore
+from project_service.infrastructure.messaging.publisher import ProjectEventPublisher
 
 logger = logging.getLogger(__name__)
 

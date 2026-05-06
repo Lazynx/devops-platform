@@ -1,11 +1,11 @@
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from faststream.kafka import KafkaBroker
 from pydantic import BaseModel
 
-from project_service.application.dtos import ProjectSecretDTO, DeploymentConfigDTO
+from project_service.application.dtos import DeploymentConfigDTO, ProjectSecretDTO
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class ProjectEventPublisher:
                 'framework': framework,
             },
         )
-        
+
         await self._logs_publisher.publish({
             "service": "project-service",
             "level": "INFO",
@@ -94,7 +94,7 @@ class ProjectEventPublisher:
         correlation_id: UUID | None = None,
     ) -> UUID:
         corr_id = correlation_id or uuid4()
-        
+
         secrets_data = [
             {
                 'key': s.key,
@@ -104,7 +104,7 @@ class ProjectEventPublisher:
             }
             for s in secrets
         ] if secrets else []
-        
+
         config_data = None
         if deployment_config:
             config_data = {

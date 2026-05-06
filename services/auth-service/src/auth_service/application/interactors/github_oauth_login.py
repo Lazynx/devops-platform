@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from auth_service.application.dtos import LoginResultDTO, OAuthCallbackInputDTO
 from auth_service.application.interfaces import (
@@ -48,6 +48,9 @@ class GitHubOAuthLoginInteractor:
             user = await self._user_repo.save(user)
         else:
             user = await self._user_repo.update_last_login(user_id=user.id)
+
+        if user is None:
+            raise ValueError('Failed to save or retrieve user')
 
         oauth_connection = OAuthConnection(
             id=uuid4(),

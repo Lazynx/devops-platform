@@ -1,10 +1,9 @@
-from datetime import datetime, UTC
 from uuid import UUID
 
-from project_service.application.dtos import ProjectStatusDTO, ProgressDTO, ErrorDTO
+from project_service.application.dtos import ErrorDTO, ProgressDTO, ProjectStatusDTO
 from project_service.application.exceptions import ProjectNotFoundError
 from project_service.application.interfaces.project_repository import IProjectRepository
-from project_service.domain.entities import ProjectStatus, SecretsStatus, DeploymentStatus
+from project_service.domain.entities import DeploymentStatus, ProjectStatus, SecretsStatus
 
 
 class GetProjectStatusInteractor:
