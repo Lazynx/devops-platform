@@ -2,20 +2,16 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-# AlertManager configuration
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
             - '127.0.0.1:9097'
 
-# Load rules once and periodically evaluate them
 rule_files:
   - 'nomad_alerts.yml'
 
-# Scrape configurations
 scrape_configs:
-  # Nomad server metrics
   - job_name: 'nomad'
     consul_sd_configs:
       - server: 'localhost:8500'
@@ -27,7 +23,6 @@ scrape_configs:
       - source_labels: [__meta_consul_service]
         target_label: job
 
-  # Nomad client metrics
   - job_name: 'nomad-client'
     consul_sd_configs:
       - server: 'localhost:8500'
@@ -36,7 +31,6 @@ scrape_configs:
     params:
       format: ['prometheus']
 
-  # Consul metrics
   - job_name: 'consul'
     static_configs:
       - targets: ['localhost:8500']
@@ -44,7 +38,6 @@ scrape_configs:
     params:
       format: ['prometheus']
 
-  # Services health endpoints (FastAPI /health)
   - job_name: 'services'
     consul_sd_configs:
       - server: 'localhost:8500'

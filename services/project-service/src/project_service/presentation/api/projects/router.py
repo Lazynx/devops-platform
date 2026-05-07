@@ -129,8 +129,6 @@ async def poll_project_status(
         while elapsed < max_timeout:
             status_dto = await interactor.execute(project_id)
 
-            # If last_updated_at is not provided, return immediately
-            # If status_dto.updated_at is newer than last_updated_at, return immediately
             if last_updated_at is None or status_dto.updated_at > last_updated_at:
                 return ProjectStatusResponse(
                     project_id=status_dto.project_id,
@@ -158,7 +156,6 @@ async def poll_project_status(
             await asyncio.sleep(poll_interval)
             elapsed += poll_interval
 
-        # Timeout reached, return current status
         status_dto = await interactor.execute(project_id)
         return ProjectStatusResponse(
             project_id=status_dto.project_id,

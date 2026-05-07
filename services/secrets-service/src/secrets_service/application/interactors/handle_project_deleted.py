@@ -20,10 +20,8 @@ class HandleProjectDeletedInteractor:
         logger.info(f"Handling project.deleted for project {project_id}")
         project_uuid = UUID(project_id)
 
-        # 1. Get all secrets for the project
         secrets = await self._repository.get_by_project_id(project_uuid)
 
-        # 2. Delete secrets from Vault and DB
         for secret in secrets:
             try:
                 await self._vault_client.delete_secret(secret.vault_path)

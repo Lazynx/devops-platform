@@ -61,10 +61,6 @@ else
     echo "Vault is already running."
 fi
 
-# PostgreSQL, Redis, Kafka, OpenSearch, Nexus управляются через Docker Compose.
-# Запускай их отдельно: docker compose -f docker-compose.dev.yml up -d
-# (или через: make up-compose из корня проекта)
-
 sleep 2
 
 echo "Registering services with Consul..."

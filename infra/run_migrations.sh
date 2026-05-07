@@ -1,6 +1,4 @@
 #!/bin/bash
-
-# Determine the correct path based on where script is run from
 if [ -d "infra" ]; then
     JOBS_DIR="infra/nomad-stack/jobs/migrations"
 elif [ -d "nomad-stack" ]; then

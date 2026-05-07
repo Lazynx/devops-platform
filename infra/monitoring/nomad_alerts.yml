@@ -2,7 +2,6 @@ groups:
   - name: nomad_alerts
     interval: 30s
     rules:
-      # Alert when a Nomad job allocation fails
       - alert: NomadJobFailed
         expr: nomad_nomad_job_summary_failed > 0
         for: 1m
@@ -12,7 +11,6 @@ groups:
           summary: "Nomad job {{ $labels.job }} has failed allocations"
           description: "Job {{ $labels.job }} has {{ $value }} failed allocations"
 
-      # Alert when a Nomad job is unhealthy
       - alert: NomadJobUnhealthy
         expr: nomad_nomad_job_summary_running < nomad_nomad_job_summary_desired
         for: 2m
@@ -22,7 +20,6 @@ groups:
           summary: "Nomad job {{ $labels.job }} is unhealthy"
           description: "Job {{ $labels.job }} has {{ $value }} running instances but desires more"
 
-      # Alert when service health check fails
       - alert: ServiceHealthCheckFailed
         expr: up{job="services"} == 0
         for: 2m
@@ -32,7 +29,6 @@ groups:
           summary: "Service {{ $labels.service_name }} health check failed"
           description: "Service {{ $labels.service_name }} has been down for more than 2 minutes"
 
-      # Alert when Nomad server is down
       - alert: NomadServerDown
         expr: up{job="nomad"} == 0
         for: 1m
@@ -42,7 +38,6 @@ groups:
           summary: "Nomad server is down"
           description: "Nomad server has been unreachable for more than 1 minute"
 
-      # Alert when a job has pending allocations
       - alert: NomadJobPending
         expr: nomad_nomad_job_summary_queued > 0
         for: 5m

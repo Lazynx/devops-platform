@@ -1,7 +1,4 @@
 #!/bin/bash
-# Создаёт все базы данных из переменной POSTGRES_MULTIPLE_DATABASES
-# Формат: POSTGRES_MULTIPLE_DATABASES=db1,db2,db3
-
 set -e
 
 if [ -z "$POSTGRES_MULTIPLE_DATABASES" ]; then

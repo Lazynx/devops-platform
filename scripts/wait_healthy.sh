@@ -1,6 +1,4 @@
 #!/bin/bash
-# Ждёт пока критические сервисы Docker Compose станут healthy
-
 set -euo pipefail
 
 TIMEOUT=120
@@ -27,8 +25,6 @@ wait_for() {
 wait_for "PostgreSQL" "docker exec devops-postgres pg_isready -U postgres"
 wait_for "Redis"      "docker exec devops-redis redis-cli ping"
 wait_for "OpenSearch" "curl -sf http://localhost:9200/_cluster/health"
-
-# Kafka — просто проверяем что порт открыт (SASL усложняет health check)
 wait_for "Kafka" "bash -c 'echo > /dev/tcp/localhost/9094' 2>/dev/null"
 
 echo ""

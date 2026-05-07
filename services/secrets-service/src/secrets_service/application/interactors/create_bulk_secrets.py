@@ -38,7 +38,6 @@ class CreateBulkSecretsInteractor:
 
         await self._repository._session.flush()
 
-        # Create read policy for this project
         policy_name = f"project-{dto.project_id}-read"
         policy_rules = f"""
 path "secret/data/projects/{dto.project_id}/*" {{

@@ -53,7 +53,6 @@ class AnalyzeRepositoryInteractor:
     ) -> RepositoryConfigDTO:
         file_names = {file.name for file in files if file.type == 'file'}
 
-        # Node.js / JavaScript / TypeScript
         if 'package.json' in file_names:
             result = await self._detect_nodejs_framework(
                 file_names, owner, repo, github_token, root_directory
@@ -61,7 +60,6 @@ class AnalyzeRepositoryInteractor:
             if result:
                 return result
 
-        # Python
         if 'requirements.txt' in file_names or 'pyproject.toml' in file_names:
             result = await self._detect_python_framework(
                 file_names, owner, repo, github_token, root_directory
@@ -69,7 +67,6 @@ class AnalyzeRepositoryInteractor:
             if result:
                 return result
 
-        # Go
         if 'go.mod' in file_names:
             return self._create_config(
                 repository=f'{owner}/{repo}',
@@ -82,7 +79,6 @@ class AnalyzeRepositoryInteractor:
                 detected_files=['go.mod']
             )
 
-        # Rust
         if 'Cargo.toml' in file_names:
             return self._create_config(
                 repository=f'{owner}/{repo}',
@@ -95,7 +91,6 @@ class AnalyzeRepositoryInteractor:
                 detected_files=['Cargo.toml']
             )
 
-        # Java (Maven)
         if 'pom.xml' in file_names:
             return self._create_config(
                 repository=f'{owner}/{repo}',
@@ -108,7 +103,6 @@ class AnalyzeRepositoryInteractor:
                 detected_files=['pom.xml']
             )
 
-        # Java (Gradle)
         if 'build.gradle' in file_names or 'build.gradle.kts' in file_names:
             gradle_file = 'build.gradle.kts' if 'build.gradle.kts' in file_names else 'build.gradle'
             return self._create_config(
@@ -122,7 +116,6 @@ class AnalyzeRepositoryInteractor:
                 detected_files=[gradle_file]
             )
 
-        # Unknown framework
         return self._create_config(
             repository=f'{owner}/{repo}',
             root_directory=root_directory,
@@ -161,7 +154,6 @@ class AnalyzeRepositoryInteractor:
             dev_dependencies = package_data.get('devDependencies', {})
             all_deps = {**dependencies, **dev_dependencies}
 
-            # Next.js
             if 'next' in all_deps:
                 framework = 'Next.js'
                 confidence = 'high'
@@ -170,7 +162,6 @@ class AnalyzeRepositoryInteractor:
                 if 'next.config.js' in file_names or 'next.config.mjs' in file_names:
                     detected.append('next.config.js' if 'next.config.js' in file_names else 'next.config.mjs')
 
-            # Vite
             elif 'vite' in all_deps:
                 if 'react' in all_deps:
                     framework = 'React (Vite)'
@@ -186,19 +177,16 @@ class AnalyzeRepositoryInteractor:
                 if 'vite.config.js' in file_names or 'vite.config.ts' in file_names:
                     detected.append('vite.config.js' if 'vite.config.js' in file_names else 'vite.config.ts')
 
-            # Create React App
             elif 'react-scripts' in all_deps:
                 framework = 'React (CRA)'
                 confidence = 'high'
                 build_cmd = 'npm run build'
                 start_cmd = 'npm start'
 
-            # React (generic)
             elif 'react' in all_deps:
                 framework = 'React'
                 confidence = 'medium'
 
-            # Angular
             elif '@angular/core' in all_deps:
                 framework = 'Angular'
                 confidence = 'high'
@@ -207,7 +195,6 @@ class AnalyzeRepositoryInteractor:
                 if 'angular.json' in file_names:
                     detected.append('angular.json')
 
-            # Vue.js
             elif 'vue' in all_deps:
                 framework = 'Vue.js'
                 confidence = 'high'
@@ -216,14 +203,12 @@ class AnalyzeRepositoryInteractor:
                 if 'vue.config.js' in file_names:
                     detected.append('vue.config.js')
 
-            # NestJS
             elif '@nestjs/core' in all_deps:
                 framework = 'NestJS'
                 confidence = 'high'
                 build_cmd = 'npm run build'
                 start_cmd = 'npm run start:dev'
 
-            # Express
             elif 'express' in all_deps:
                 framework = 'Express'
                 confidence = 'high'
@@ -257,12 +242,11 @@ class AnalyzeRepositoryInteractor:
         framework = 'Python'
         confidence = 'medium'
         install_cmd = 'pip install -r requirements.txt'
-        build_cmd = None  # Python doesn't need build step
+        build_cmd = None
         start_cmd = 'python main.py'
 
         dependencies = set()
 
-        # Parse requirements.txt
         if 'requirements.txt' in file_names:
             file_path = self._build_file_path(root_directory, 'requirements.txt')
             requirements = await self._github_service.get_file_content(github_token, owner, repo, file_path)
@@ -274,7 +258,6 @@ class AnalyzeRepositoryInteractor:
                         pkg = line.split('==')[0].split('>=')[0].split('<=')[0].split('~=')[0].strip().lower()
                         dependencies.add(pkg)
 
-        # Parse pyproject.toml
         if 'pyproject.toml' in file_names:
             file_path = self._build_file_path(root_directory, 'pyproject.toml')
             pyproject = await self._github_service.get_file_content(github_token, owner, repo, file_path)
@@ -290,7 +273,6 @@ class AnalyzeRepositoryInteractor:
                 if 'requirements.txt' not in file_names:
                     install_cmd = 'pip install .'
 
-        # FastAPI
         if 'fastapi' in dependencies:
             framework = 'FastAPI'
             confidence = 'high'
@@ -303,7 +285,6 @@ class AnalyzeRepositoryInteractor:
             else:
                 start_cmd = 'uvicorn main:app --host 0.0.0.0 --port $PORT'
 
-        # Django
         elif 'django' in dependencies:
             framework = 'Django'
             confidence = 'high'
@@ -311,7 +292,6 @@ class AnalyzeRepositoryInteractor:
             if 'manage.py' in file_names:
                 detected.append('manage.py')
 
-        # Flask
         elif 'flask' in dependencies:
             framework = 'Flask'
             confidence = 'high'
@@ -321,7 +301,6 @@ class AnalyzeRepositoryInteractor:
             elif 'wsgi.py' in file_names:
                 detected.append('wsgi.py')
 
-        # Django (detected by manage.py)
         elif 'manage.py' in file_names:
             framework = 'Django'
             confidence = 'medium'
