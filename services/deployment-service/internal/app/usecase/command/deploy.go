@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
 	"time"
 
 	"deployment-service/internal/app/port"
@@ -12,6 +14,15 @@ import (
 
 	"github.com/google/uuid"
 )
+
+var nonAlphanumDash = regexp.MustCompile(`[^a-z0-9-]`)
+
+func slugify(name string) string {
+	s := strings.ToLower(name)
+	s = nonAlphanumDash.ReplaceAllString(s, "-")
+	s = regexp.MustCompile(`-+`).ReplaceAllString(s, "-")
+	return strings.Trim(s, "-")
+}
 
 type BuildJobRenderer interface {
 	RenderBuildJob(p BuildJobParams) (string, error)
@@ -202,7 +213,7 @@ func (c *DeployCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deploym
 	_ = c.publisher.PublishDeploying(ctx, d.ID, d.ProjectID)
 
 	imageURL := c.imageTag(d.ProjectID.String(), d.Version)
-	deploymentURL := fmt.Sprintf("http://%s-%s.localhost:8090", in.ProjectName, d.ID.String()[:8])
+	deploymentURL := fmt.Sprintf("http://%s-%s.localhost:8090", slugify(in.ProjectName), d.ID.String()[:8])
 
 	deployHCL, err := c.deployRender.RenderDeployJob(DeployJobParams{
 		DeploymentID:     d.ID.String(),

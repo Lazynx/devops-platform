@@ -91,10 +91,12 @@ func (c *Consumer) publishDLQ(ctx context.Context, rec *kgo.Record, err error) {
 		"error":    err.Error(),
 		"failed_at": time.Now().UTC().Format(time.RFC3339),
 	})
-	_ = c.producer.ProduceSync(ctx, &kgo.Record{
+	if err := c.producer.ProduceSync(ctx, &kgo.Record{
 		Topic: dlqTopic,
 		Value: payload,
-	})
+	}).FirstErr(); err != nil {
+		slog.Error("failed to publish to DLQ", "topic", rec.Topic, "offset", rec.Offset, "err", err)
+	}
 }
 
 type secretsBulkCreatedEvent struct {

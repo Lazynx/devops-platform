@@ -243,10 +243,17 @@ Provisions Docker, Nomad, Consul, Vault, and `uv` on first boot.
 
 | Topic | Producer | Consumer | Purpose |
 |---|---|---|---|
-| `project.created` | project-service | secrets-service | Trigger secret provisioning |
+| `project.created` | project-service | — | Informational: project created without secrets |
+| `project.created_with_secrets` | project-service | secrets-service | Trigger secret provisioning + deployment config |
 | `project.deleted` | project-service | deployment-service, secrets-service | Cascade delete |
 | `secrets.bulk_created` | secrets-service | deployment-service | Trigger build + deploy |
-| `deployment.status_changed` | deployment-service | project-service | Update project status |
+| `secrets.failed` | secrets-service | project-service | Propagate secret provisioning failure |
+| `deployment.config_created` | deployment-service | project-service | Config stored, optionally trigger deploy |
+| `deployment.config_failed` | deployment-service | project-service | Propagate config creation failure |
+| `deployment.building` | deployment-service | project-service | Update project deployment status |
+| `deployment.deploying` | deployment-service | project-service | Update project deployment status |
+| `deployment.running` | deployment-service | project-service | Update project status + deployment URL |
+| `deployment.failed` | deployment-service | project-service | Update project status + error message |
 | `service-logs` | all services | logstash | Centralised structured logging |
 | `*.dlq` | each service | — | Dead-letter queue for failed events |
 
@@ -287,6 +294,9 @@ lint-secrets-service──┘
                          build-deployment-service-go (go build + go vet + go test -race)
                          build-docker-images (PR only, matrix: auth / project / secrets)
 ```
+
+> Note: the Go deployment-service Docker image is only built during CD (not in CI lint/test jobs).
+
 
 ---
 

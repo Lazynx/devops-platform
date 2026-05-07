@@ -134,7 +134,9 @@ func (c *RetryCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deployme
 		c.fail(ctx, d, err.Error())
 		return
 	}
-	_ = c.deployments.Save(ctx, d)
+	if err := c.deployments.Save(ctx, d); err != nil {
+		log.Error("failed to save deploying status", "err", err)
+	}
 	_ = c.publisher.PublishDeploying(ctx, d.ID, d.ProjectID)
 
 	secretRefs, err := c.secrets.FetchForProject(ctx, d.ProjectID)
@@ -143,7 +145,7 @@ func (c *RetryCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deployme
 		secretRefs = nil
 	}
 
-	deploymentURL := fmt.Sprintf("http://%s-%s.localhost:8090", in.ProjectName, d.ID.String()[:8])
+	deploymentURL := fmt.Sprintf("http://%s-%s.localhost:8090", slugify(in.ProjectName), d.ID.String()[:8])
 
 	deployHCL, err := c.deployRender.RenderDeployJob(DeployJobParams{
 		DeploymentID:     d.ID.String(),
@@ -171,7 +173,9 @@ func (c *RetryCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deployme
 		c.fail(ctx, d, err.Error())
 		return
 	}
-	_ = c.deployments.Save(ctx, d)
+	if err := c.deployments.Save(ctx, d); err != nil {
+		log.Error("failed to save running status", "err", err)
+	}
 	_ = c.publisher.PublishRunning(ctx, d.ID, d.ProjectID, imageURL, deploymentURL)
 
 	metrics.DeploymentTotal.WithLabelValues("running", string(cfg.Environment)).Inc()

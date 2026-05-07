@@ -57,6 +57,9 @@ func NewDeploymentConfig(projectID uuid.UUID, repoURL string, env Environment) *
 }
 
 func (c *DeploymentConfig) Validate() error {
+	if c.Port < 1 || c.Port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", c.Port)
+	}
 	if c.InstanceCount < 1 || c.InstanceCount > 20 {
 		return fmt.Errorf("instance_count must be between 1 and 20, got %d", c.InstanceCount)
 	}

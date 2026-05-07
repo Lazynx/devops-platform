@@ -33,10 +33,7 @@ class CreateBulkSecretsInteractor:
             )
             metadata_list.append(metadata)
 
-        for metadata in metadata_list:
-            self._repository._session.add(metadata)
-
-        await self._repository._session.flush()
+        metadata_list = await self._repository.save_many(metadata_list)
 
         policy_name = f"project-{dto.project_id}-read"
         policy_rules = f"""
@@ -45,9 +42,6 @@ path "secret/data/projects/{dto.project_id}/*" {{
 }}
 """
         await self._vault_client.create_policy(policy_name, policy_rules)
-
-        for metadata in metadata_list:
-            await self._repository._session.refresh(metadata)
 
         publish_tasks = [
             self._publisher.publish_secret_created(

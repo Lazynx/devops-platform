@@ -72,7 +72,6 @@ jobs:
       - uses: astral-sh/setup-uv@v3
       - run: uv sync --dev
       - run: uv run pytest tests/ -v --tb=short
-        continue-on-error: true
 
   validate-nomad-jobs:
     runs-on: ubuntu-latest

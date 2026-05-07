@@ -17,6 +17,14 @@ class SqlAlchemySecretRepository(SecretRepository):
         await self._session.refresh(secret)
         return secret
 
+    async def save_many(self, secrets: list[SecretMetadata]) -> list[SecretMetadata]:
+        for secret in secrets:
+            self._session.add(secret)
+        await self._session.flush()
+        for secret in secrets:
+            await self._session.refresh(secret)
+        return secrets
+
     async def get_by_id(self, secret_id: UUID) -> SecretMetadata | None:
         result = await self._session.execute(select(SecretMetadata).where(SecretMetadata.id == secret_id))
         return result.scalar_one_or_none()

@@ -10,6 +10,10 @@ class SecretRepository(ABC):
         pass
 
     @abstractmethod
+    async def save_many(self, secrets: list[SecretMetadata]) -> list[SecretMetadata]:
+        pass
+
+    @abstractmethod
     async def get_by_id(self, secret_id: UUID) -> SecretMetadata | None:
         pass
 

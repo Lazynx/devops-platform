@@ -23,7 +23,7 @@ func NewClient(baseURL string) *Client {
 }
 
 func (c *Client) GetGitHubToken(ctx context.Context, userAccessToken string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v1/auth/github-token", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v1/auth/oauth/github/token", nil)
 	if err != nil {
 		return "", err
 	}

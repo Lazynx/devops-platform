@@ -55,8 +55,7 @@ class CreateProjectInteractor:
                 webhook_id = webhook_data.github_webhook_id
                 webhook_secret = webhook_data.github_webhook_secret
             except Exception as e:
-                import logging
-                logging.warning(f"Failed to create webhook for {dto.owner}/{dto.repo}: {e}")
+                logger.warning("Failed to create webhook for %s/%s: %s", dto.owner, dto.repo, e)
 
         owner_id = await self._auth_service.get_current_user_id(dto.user_access_token)
 
