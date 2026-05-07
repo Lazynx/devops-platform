@@ -7,25 +7,25 @@ A self-hosted application deployment platform — point it at any GitHub reposit
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│                       Traefik (API Gateway)                        │
-│            Host-based routing via Consul service catalog           │
-└──────┬───────────────┬──────────────┬───────────────┬─────────────┘
-       │               │              │               │
+┌──────────────────────────────────────────────────────────────────┐
+│                       Traefik (API Gateway)                      │
+│            Host-based routing via Consul service catalog         │
+└──────┬───────────────┬─────────────┬──────────────┬──────────────┘
+       │               │             │              │
  ┌─────▼──────┐ ┌──────▼─────┐ ┌─────▼──────┐ ┌─────▼──────────┐
  │auth-service│ │project-svc │ │secrets-svc │ │deployment-svc  │
  │  Python    │ │  Python    │ │  Python    │ │      Go        │
  │  :8000     │ │  :8001     │ │  :8003     │ │  :8005         │
- └─────┬──────┘ └──────┬─────┘ └─────┬──────┘ └──────┬─────────┘
-       │               │              │               │
-       └───────────────┴──────────────┴───────────────┘
+ └─────┬──────┘ └──────┬─────┘ └─────┬──────┘ └───────┬────────┘
+       │               │             │                │
+       └───────────────┴─────────────┴────────────────┘
                                │
                ┌───────────────▼───────────────┐
-               │    Apache Kafka (KRaft + SASL) │
+               │  Apache Kafka (KRaft + SASL)  │
                └───────────────┬───────────────┘
                                │
-          ┌────────────────────┼──────────────────┐
-          │                    │                  │
+          ┌────────────────────┼─────────────────┐
+          │                    │                 │
    ┌──────▼──────┐    ┌────────▼───────┐  ┌──────▼──────┐
    │  PostgreSQL │    │ Nomad+Consul   │  │   Vault     │
    │  (per svc)  │    │ (orchestrator) │  │  (secrets)  │
@@ -51,7 +51,7 @@ User  ──POST /projects──▶  project-service
                                        │
                                  Traefik picks up route
                                        │
-                              ✅ App live at {project}.localhost:8090
+                              App live at {project}.localhost:8090
 ```
 
 ---
@@ -180,7 +180,7 @@ cd services/secrets-service    && uv run uvicorn secrets_service.app:app --port 
 cd services/deployment-service && go run ./cmd/api/
 ```
 
-### Mac M4 — Lima VM
+### Mac ARM chip — Lima VM
 
 ```bash
 limactl start .lima/devops-platform.yaml
@@ -290,6 +290,30 @@ lint-secrets-service──┘
 
 ---
 
+ ## CD Pipeline
+                                                                                                                                                                                                                                   
+On every successful CI run on `main`, images are built and pushed to GitHub Container Registry (GHCR):                                                                                                                           
+                                                                                                                                                                                                                                   
+CI (success on main)                                                                                                                                                                                                             
+   │                                                 
+   ▼                                                                                                                                                                                                                        
+publish-images (matrix: auth / project / secrets / deployment)
+   │                                                                                                                                                                                                                        
+   ├── docker buildx build
+   └── ghcr.io/lazynx/devops-platform-{service}:latest                                                                                                                                                                      
+       ghcr.io/lazynx/devops-platform-{service}:{git-sha}                                                                                                                                                                   
+                                                                                                                                                                                                                            
+| Image | Registry path |                                                                                                                                                                                                        
+|---|---|                                                                                                                                                                                                                        
+| `auth-service` | `ghcr.io/lazynx/devops-platform-auth-service` |
+| `project-service` | `ghcr.io/lazynx/devops-platform-project-service` |                                                                                                                                                         
+| `secrets-service` | `ghcr.io/lazynx/devops-platform-secrets-service` |
+| `deployment-service` | `ghcr.io/lazynx/devops-platform-deployment-service` |                                                                                                                                                   
+                                                     
+Tags pushed per release: `:latest` and `:<commit-sha>` for pinned rollbacks.         
+
+---
+
 ## Environment Variables
 
 | Variable | Service | Description |
@@ -303,9 +327,3 @@ lint-secrets-service──┘
 | `NEXUS_REGISTRY_URL` | deployment | Docker registry |
 | `AUTH_SERVICE_URL` | deployment | auth-service base URL |
 | `SECRETS_SERVICE_URL` | deployment | secrets-service base URL |
-
----
-
-## License
-
-MIT
