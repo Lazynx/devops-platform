@@ -69,7 +69,7 @@ func (r *ConfigRepo) GetByProjectID(ctx context.Context, projectID uuid.UUID) ([
 		SELECT id, project_id, github_repo_url, environment, instance_count, cpu_limit, memory_limit,
 		       auto_scaling_enabled, min_instances, max_instances, port, health_check_path,
 		       dockerfile_path, docker_build_context, created_at, updated_at
-		FROM deployment_configs WHERE project_id = $1`, projectID)
+		FROM deployment_configs WHERE project_id = $1 ORDER BY created_at DESC`, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("repo.config.GetByProjectID: %w", err)
 	}

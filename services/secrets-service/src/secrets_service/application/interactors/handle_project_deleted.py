@@ -23,12 +23,12 @@ class HandleProjectDeletedInteractor:
         secrets = await self._repository.get_by_project_id(project_uuid)
 
         for secret in secrets:
+            await self._repository.delete(secret.id)
+
+        for secret in secrets:
             try:
                 await self._vault_client.delete_secret(secret.vault_path)
             except Exception as e:
                 logger.warning(f"Failed to delete secret {secret.vault_path} from Vault: {e}")
 
-            await self._repository.delete(secret.id)
-
-        await self._repository._session.commit()
         logger.info(f"Successfully deleted secrets for project {project_id}")

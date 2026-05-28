@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"deployment-service/internal/app/port"
@@ -27,16 +26,16 @@ func (c *StopCommand) Execute(ctx context.Context, deploymentID uuid.UUID) error
 		return fmt.Errorf("get deployment: %w", err)
 	}
 
-	if err := d.MarkStopped(); err != nil {
-		var inv domain.ErrInvalidTransition
-		if errors.As(err, &inv) {
-			return domain.ErrNotRunning
-		}
-		return err
+	if d.Status != domain.StatusRunning {
+		return domain.ErrNotRunning
 	}
 
 	if err := c.nomad.StopJob(ctx, d.NomadAppJobID(), true); err != nil {
 		return fmt.Errorf("stop nomad job: %w", err)
+	}
+
+	if err := d.MarkStopped(); err != nil {
+		return err
 	}
 
 	if err := c.deployments.Save(ctx, d); err != nil {

@@ -122,8 +122,11 @@ func main() {
 
 	slog.Info("deployment-service started", "http_port", cfg.HTTPPort)
 
-	if err := g.Wait(); err != nil {
-		slog.Error("service stopped with error", "err", err)
+	serveErr := g.Wait()
+	deploySvc.Wait()
+	retrySvc.Wait()
+	if serveErr != nil {
+		slog.Error("service stopped with error", "err", serveErr)
 		os.Exit(1)
 	}
 }

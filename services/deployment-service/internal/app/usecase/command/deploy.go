@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"deployment-service/internal/app/port"
@@ -41,6 +42,7 @@ type DeployCommand struct {
 	deployRender DeployJobRenderer
 	registry     RegistryConfig
 	appCtx       context.Context
+	wg           sync.WaitGroup
 }
 
 type RegistryConfig struct {
@@ -111,10 +113,16 @@ func (c *DeployCommand) Execute(ctx context.Context, in SecretsBulkCreatedInput)
 		slog.Warn("failed to publish building event", "err", err)
 	}
 
-	go c.runBuildAndDeploy(c.appCtx, deployment, cfg, in)
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+		c.runBuildAndDeploy(c.appCtx, deployment, cfg, in)
+	}()
 
 	return nil
 }
+
+func (c *DeployCommand) Wait() { c.wg.Wait() }
 
 func (c *DeployCommand) createConfig(ctx context.Context, in SecretsBulkCreatedInput) (*domain.DeploymentConfig, error) {
 	di := in.DeploymentConfig

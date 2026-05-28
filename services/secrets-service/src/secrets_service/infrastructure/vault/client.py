@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 
 import hvac
 from hvac.exceptions import VaultError
@@ -7,6 +8,8 @@ from hvac.exceptions import VaultError
 class VaultClient:
     def __init__(self, url: str, token: str):
         self._client = hvac.Client(url=url, token=token)
+        with contextlib.suppress(Exception):
+            self._client.auth.token.renew_self()
 
     async def write_secret(self, path: str, data: dict[str, str]) -> None:
         try:

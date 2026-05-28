@@ -15,8 +15,22 @@ class CreateBulkSecretsInteractor:
         self._publisher = publisher
 
     async def execute(self, dto: CreateBulkSecretsDTO) -> list[SecretDTO]:
-        vault_path = self._build_vault_path(dto.project_id, dto.deployment_id)
+        existing = await self._repository.get_by_project_id(dto.project_id)
+        if existing:
+            return [
+                SecretDTO(
+                    id=m.id,
+                    project_id=m.project_id,
+                    deployment_id=m.deployment_id,
+                    key=m.key,
+                    secret_type=m.secret_type,
+                    vault_path=m.vault_path,
+                    description=m.description,
+                )
+                for m in existing
+            ]
 
+        vault_path = self._build_vault_path(dto.project_id, dto.deployment_id)
         all_secrets_data = {s.key: s.value for s in dto.secrets}
 
         await self._vault_client.write_secret(vault_path, all_secrets_data)
@@ -33,7 +47,11 @@ class CreateBulkSecretsInteractor:
             )
             metadata_list.append(metadata)
 
-        metadata_list = await self._repository.save_many(metadata_list)
+        try:
+            metadata_list = await self._repository.save_many(metadata_list)
+        except Exception:
+            await self._vault_client.delete_secret(vault_path)
+            raise
 
         policy_name = f"project-{dto.project_id}-read"
         policy_rules = f"""

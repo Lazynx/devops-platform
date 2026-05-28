@@ -85,10 +85,10 @@ func (c *Consumer) dispatch(ctx context.Context, rec *kgo.Record) error {
 
 func (c *Consumer) publishDLQ(ctx context.Context, rec *kgo.Record, err error) {
 	payload, _ := json.Marshal(map[string]any{
-		"topic":    rec.Topic,
-		"offset":   rec.Offset,
-		"payload":  string(rec.Value),
-		"error":    err.Error(),
+		"topic":     rec.Topic,
+		"partition": rec.Partition,
+		"offset":    rec.Offset,
+		"error":     err.Error(),
 		"failed_at": time.Now().UTC().Format(time.RFC3339),
 	})
 	if err := c.producer.ProduceSync(ctx, &kgo.Record{

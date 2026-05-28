@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"deployment-service/internal/app/port"
@@ -24,6 +25,7 @@ type RetryCommand struct {
 	deployRender DeployJobRenderer
 	registry     RegistryConfig
 	appCtx       context.Context
+	wg           sync.WaitGroup
 }
 
 func NewRetryCommand(
@@ -84,9 +86,15 @@ func (c *RetryCommand) Execute(ctx context.Context, in RetryInput) (*domain.Depl
 	}
 	_ = c.publisher.PublishBuilding(ctx, d.ID, d.ProjectID, in.CorrelationID)
 
-	go c.runBuildAndDeploy(c.appCtx, d, cfg, githubToken, in)
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+		c.runBuildAndDeploy(c.appCtx, d, cfg, githubToken, in)
+	}()
 	return d, nil
 }
+
+func (c *RetryCommand) Wait() { c.wg.Wait() }
 
 func (c *RetryCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deployment, cfg *domain.DeploymentConfig, githubToken string, in RetryInput) {
 	log := slog.Default().With(

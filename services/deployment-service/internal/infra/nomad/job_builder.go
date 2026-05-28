@@ -38,13 +38,13 @@ func (b *JobBuilder) RenderBuildJob(p command.BuildJobParams) (string, error) {
 	script := fmt.Sprintf(
 		"echo %s | docker login %s -u %s --password-stdin && apk add --no-cache git && git clone %s repo && cd repo && docker build -t %s -f %s %s && docker push %s",
 		shellEscape(p.RegistryPassword),
-		p.RegistryURL,
+		shellEscape(p.RegistryURL),
 		shellEscape(p.RegistryUser),
-		cloneURL,
-		p.ImageTag,
-		p.DockerfilePath,
-		p.BuildContext,
-		p.ImageTag,
+		shellEscape(cloneURL),
+		shellEscape(p.ImageTag),
+		shellEscape(p.DockerfilePath),
+		shellEscape(p.BuildContext),
+		shellEscape(p.ImageTag),
 	)
 
 	data := struct {

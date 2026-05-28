@@ -158,7 +158,12 @@ async def handle_deployment_running(
 ) -> None:
     logger.info('Received deployment.running', extra={'project_id': event.project_id})
     try:
-        await interactor.execute(project_id=event.project_id, status='running', deployment_url=event.deployment_url, correlation_id=event.correlation_id)
+        await interactor.execute(
+            project_id=event.project_id,
+            status='running',
+            deployment_url=event.deployment_url,
+            correlation_id=event.correlation_id,
+        )
     except Exception as e:
         logger.error('Failed to handle deployment.running', extra={'project_id': event.project_id, 'error': str(e)}, exc_info=True)
         await broker.publish(_dlq('deployment.running', event, e), DLQ_TOPIC)
@@ -173,7 +178,12 @@ async def handle_deployment_failed(
 ) -> None:
     logger.info('Received deployment.failed', extra={'project_id': event.project_id})
     try:
-        await interactor.execute(project_id=event.project_id, status='failed', error_message=event.error_message, correlation_id=event.correlation_id)
+        await interactor.execute(
+            project_id=event.project_id,
+            status='failed',
+            error_message=event.error_message,
+            correlation_id=event.correlation_id,
+        )
     except Exception as e:
         logger.error('Failed to handle deployment.failed', extra={'project_id': event.project_id, 'error': str(e)}, exc_info=True)
         await broker.publish(_dlq('deployment.failed', event, e), DLQ_TOPIC)
