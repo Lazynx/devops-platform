@@ -120,3 +120,15 @@ class SecretEventPublisher:
             correlation_id=correlation_id,
         )
         await self._secrets_bulk_created_publisher.publish(event)
+
+        from datetime import UTC, datetime
+        await self._logs_publisher.publish({
+            "service": "secrets-service",
+            "level": "INFO",
+            "message": f"Secrets bulk created for project {project_id}",
+            "project_id": str(project_id),
+            "correlation_id": correlation_id,
+            "action": "secrets.bulk_created",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "environment": "development",
+        })

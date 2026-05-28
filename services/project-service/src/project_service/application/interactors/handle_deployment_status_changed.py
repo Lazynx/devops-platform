@@ -17,12 +17,16 @@ class HandleDeploymentStatusChangedInteractor:
         status: str,
         error_message: str | None = None,
         deployment_url: str | None = None,
+        correlation_id: str | None = None,
     ) -> None:
-        logger.info(f"Updating project {project_id} deployment status to {status}")
+        logger.info(
+            f"Updating project {project_id} deployment status to {status}",
+            extra={"project_id": project_id, "correlation_id": correlation_id},
+        )
 
         project = await self._project_repo.get_by_id(UUID(project_id))
         if not project:
-            logger.error(f"Project {project_id} not found")
+            logger.error(f"Project {project_id} not found", extra={"project_id": project_id, "correlation_id": correlation_id})
             return
 
         if status == 'building' or status == 'deploying':
@@ -38,4 +42,7 @@ class HandleDeploymentStatusChangedInteractor:
                 project.last_error_step = 'deployment'
 
         await self._project_repo.save(project)
-        logger.info(f"Project {project_id} status updated to {project.status}")
+        logger.info(
+            f"Project {project_id} status updated to {project.status}",
+            extra={"project_id": project_id, "correlation_id": correlation_id},
+        )

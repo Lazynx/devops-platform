@@ -82,7 +82,7 @@ func (c *RetryCommand) Execute(ctx context.Context, in RetryInput) (*domain.Depl
 	if err := c.deployments.Save(ctx, d); err != nil {
 		return nil, fmt.Errorf("save deployment: %w", err)
 	}
-	_ = c.publisher.PublishBuilding(ctx, d.ID, d.ProjectID)
+	_ = c.publisher.PublishBuilding(ctx, d.ID, d.ProjectID, in.CorrelationID)
 
 	go c.runBuildAndDeploy(c.appCtx, d, cfg, githubToken, in)
 	return d, nil
@@ -112,18 +112,18 @@ func (c *RetryCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deployme
 		RegistryRepo:     c.registry.Repo,
 	})
 	if err != nil {
-		c.fail(ctx, d, "render build job: "+err.Error())
+		c.fail(ctx, d, "render build job: "+err.Error(), in.CorrelationID)
 		return
 	}
 	if _, err := c.nomad.SubmitJob(ctx, buildHCL); err != nil {
-		c.fail(ctx, d, "submit build job: "+err.Error())
+		c.fail(ctx, d, "submit build job: "+err.Error(), in.CorrelationID)
 		return
 	}
 
 	buildCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 	if err := c.nomad.WaitForCompletion(buildCtx, d.NomadBuildJobID()); err != nil {
-		c.fail(ctx, d, "build failed: "+err.Error())
+		c.fail(ctx, d, "build failed: "+err.Error(), in.CorrelationID)
 		metrics.DeploymentTotal.WithLabelValues("failed", string(cfg.Environment)).Inc()
 		return
 	}
@@ -131,13 +131,13 @@ func (c *RetryCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deployme
 	metrics.DeploymentDurationSeconds.WithLabelValues("build").Observe(time.Since(buildStart).Seconds())
 
 	if err := d.MarkDeploying(); err != nil {
-		c.fail(ctx, d, err.Error())
+		c.fail(ctx, d, err.Error(), in.CorrelationID)
 		return
 	}
 	if err := c.deployments.Save(ctx, d); err != nil {
 		log.Error("failed to save deploying status", "err", err)
 	}
-	_ = c.publisher.PublishDeploying(ctx, d.ID, d.ProjectID)
+	_ = c.publisher.PublishDeploying(ctx, d.ID, d.ProjectID, in.CorrelationID)
 
 	secretRefs, err := c.secrets.FetchForProject(ctx, d.ProjectID)
 	if err != nil {
@@ -161,30 +161,30 @@ func (c *RetryCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deployme
 		Hostname:         deploymentURL,
 	})
 	if err != nil {
-		c.fail(ctx, d, "render deploy job: "+err.Error())
+		c.fail(ctx, d, "render deploy job: "+err.Error(), in.CorrelationID)
 		return
 	}
 	if _, err := c.nomad.SubmitJob(ctx, deployHCL); err != nil {
-		c.fail(ctx, d, "submit deploy job: "+err.Error())
+		c.fail(ctx, d, "submit deploy job: "+err.Error(), in.CorrelationID)
 		return
 	}
 
 	if err := d.MarkRunning(imageURL, deploymentURL); err != nil {
-		c.fail(ctx, d, err.Error())
+		c.fail(ctx, d, err.Error(), in.CorrelationID)
 		return
 	}
 	if err := c.deployments.Save(ctx, d); err != nil {
 		log.Error("failed to save running status", "err", err)
 	}
-	_ = c.publisher.PublishRunning(ctx, d.ID, d.ProjectID, imageURL, deploymentURL)
+	_ = c.publisher.PublishRunning(ctx, d.ID, d.ProjectID, imageURL, deploymentURL, in.CorrelationID)
 
 	metrics.DeploymentTotal.WithLabelValues("running", string(cfg.Environment)).Inc()
 	metrics.ActiveDeployments.WithLabelValues(string(cfg.Environment)).Inc()
 	log.Info("retry deployment running", "url", deploymentURL)
 }
 
-func (c *RetryCommand) fail(ctx context.Context, d *domain.Deployment, reason string) {
+func (c *RetryCommand) fail(ctx context.Context, d *domain.Deployment, reason, correlationID string) {
 	d.MarkFailed(reason)
 	_ = c.deployments.Save(ctx, d)
-	_ = c.publisher.PublishFailed(ctx, d.ID, d.ProjectID, reason)
+	_ = c.publisher.PublishFailed(ctx, d.ID, d.ProjectID, reason, correlationID)
 }

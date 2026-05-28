@@ -18,34 +18,38 @@ func NewPublisher(client *kgo.Client) *Publisher {
 	return &Publisher{client: client}
 }
 
-func (p *Publisher) PublishBuilding(ctx context.Context, deploymentID, projectID uuid.UUID) error {
+func (p *Publisher) PublishBuilding(ctx context.Context, deploymentID, projectID uuid.UUID, correlationID string) error {
 	return p.publish(ctx, "deployment.building", map[string]any{
-		"deployment_id": deploymentID.String(),
-		"project_id":    projectID.String(),
+		"deployment_id":  deploymentID.String(),
+		"project_id":     projectID.String(),
+		"correlation_id": correlationID,
 	})
 }
 
-func (p *Publisher) PublishDeploying(ctx context.Context, deploymentID, projectID uuid.UUID) error {
+func (p *Publisher) PublishDeploying(ctx context.Context, deploymentID, projectID uuid.UUID, correlationID string) error {
 	return p.publish(ctx, "deployment.deploying", map[string]any{
-		"deployment_id": deploymentID.String(),
-		"project_id":    projectID.String(),
+		"deployment_id":  deploymentID.String(),
+		"project_id":     projectID.String(),
+		"correlation_id": correlationID,
 	})
 }
 
-func (p *Publisher) PublishRunning(ctx context.Context, deploymentID, projectID uuid.UUID, imageURL, deploymentURL string) error {
+func (p *Publisher) PublishRunning(ctx context.Context, deploymentID, projectID uuid.UUID, imageURL, deploymentURL, correlationID string) error {
 	return p.publish(ctx, "deployment.running", map[string]any{
 		"deployment_id":  deploymentID.String(),
 		"project_id":     projectID.String(),
 		"image_url":      imageURL,
 		"deployment_url": deploymentURL,
+		"correlation_id": correlationID,
 	})
 }
 
-func (p *Publisher) PublishFailed(ctx context.Context, deploymentID, projectID uuid.UUID, reason string) error {
+func (p *Publisher) PublishFailed(ctx context.Context, deploymentID, projectID uuid.UUID, reason, correlationID string) error {
 	return p.publish(ctx, "deployment.failed", map[string]any{
-		"deployment_id": deploymentID.String(),
-		"project_id":    projectID.String(),
-		"error_message": reason,
+		"deployment_id":  deploymentID.String(),
+		"project_id":     projectID.String(),
+		"error_message":  reason,
+		"correlation_id": correlationID,
 	})
 }
 

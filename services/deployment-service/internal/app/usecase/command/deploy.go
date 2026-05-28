@@ -107,7 +107,7 @@ func (c *DeployCommand) Execute(ctx context.Context, in SecretsBulkCreatedInput)
 	if err := c.deployments.Save(ctx, deployment); err != nil {
 		return fmt.Errorf("save deployment: %w", err)
 	}
-	if err := c.publisher.PublishBuilding(ctx, deployment.ID, deployment.ProjectID); err != nil {
+	if err := c.publisher.PublishBuilding(ctx, deployment.ID, deployment.ProjectID, in.CorrelationID); err != nil {
 		slog.Warn("failed to publish building event", "err", err)
 	}
 
@@ -180,12 +180,12 @@ func (c *DeployCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deploym
 	})
 	if err != nil {
 		log.Error("failed to render build job", "err", err)
-		c.failDeployment(ctx, d, "render build job: "+err.Error())
+		c.failDeployment(ctx, d, "render build job: "+err.Error(), in.CorrelationID)
 		return
 	}
 
 	if _, err := c.nomad.SubmitJob(ctx, buildHCL); err != nil {
-		c.failDeployment(ctx, d, "submit build job: "+err.Error())
+		c.failDeployment(ctx, d, "submit build job: "+err.Error(), in.CorrelationID)
 		return
 	}
 	log.Info("build job submitted", "job_id", d.NomadBuildJobID())
@@ -194,7 +194,7 @@ func (c *DeployCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deploym
 	defer cancel()
 
 	if err := c.nomad.WaitForCompletion(buildCtx, d.NomadBuildJobID()); err != nil {
-		c.failDeployment(ctx, d, "build failed: "+err.Error())
+		c.failDeployment(ctx, d, "build failed: "+err.Error(), in.CorrelationID)
 		metrics.DeploymentTotal.WithLabelValues("failed", string(cfg.Environment)).Inc()
 		return
 	}
@@ -203,14 +203,14 @@ func (c *DeployCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deploym
 	log.Info("build completed")
 
 	if err := d.MarkDeploying(); err != nil {
-		c.failDeployment(ctx, d, err.Error())
+		c.failDeployment(ctx, d, err.Error(), in.CorrelationID)
 		return
 	}
 	if err := c.deployments.Save(ctx, d); err != nil {
 		log.Error("failed to save deploying status", "err", err)
 		return
 	}
-	_ = c.publisher.PublishDeploying(ctx, d.ID, d.ProjectID)
+	_ = c.publisher.PublishDeploying(ctx, d.ID, d.ProjectID, in.CorrelationID)
 
 	imageURL := c.imageTag(d.ProjectID.String(), d.Version)
 	deploymentURL := fmt.Sprintf("http://%s-%s.localhost:8090", slugify(in.ProjectName), d.ID.String()[:8])
@@ -229,36 +229,36 @@ func (c *DeployCommand) runBuildAndDeploy(ctx context.Context, d *domain.Deploym
 		Hostname:         deploymentURL,
 	})
 	if err != nil {
-		c.failDeployment(ctx, d, "render deploy job: "+err.Error())
+		c.failDeployment(ctx, d, "render deploy job: "+err.Error(), in.CorrelationID)
 		return
 	}
 
 	if _, err := c.nomad.SubmitJob(ctx, deployHCL); err != nil {
-		c.failDeployment(ctx, d, "submit deploy job: "+err.Error())
+		c.failDeployment(ctx, d, "submit deploy job: "+err.Error(), in.CorrelationID)
 		return
 	}
 
 	if err := d.MarkRunning(imageURL, deploymentURL); err != nil {
-		c.failDeployment(ctx, d, err.Error())
+		c.failDeployment(ctx, d, err.Error(), in.CorrelationID)
 		return
 	}
 	if err := c.deployments.Save(ctx, d); err != nil {
 		log.Error("failed to save running status", "err", err)
 		return
 	}
-	_ = c.publisher.PublishRunning(ctx, d.ID, d.ProjectID, imageURL, deploymentURL)
+	_ = c.publisher.PublishRunning(ctx, d.ID, d.ProjectID, imageURL, deploymentURL, in.CorrelationID)
 
 	metrics.DeploymentTotal.WithLabelValues("running", string(cfg.Environment)).Inc()
 	metrics.ActiveDeployments.WithLabelValues(string(cfg.Environment)).Inc()
 	log.Info("deployment running", "url", deploymentURL)
 }
 
-func (c *DeployCommand) failDeployment(ctx context.Context, d *domain.Deployment, reason string) {
+func (c *DeployCommand) failDeployment(ctx context.Context, d *domain.Deployment, reason, correlationID string) {
 	d.MarkFailed(reason)
 	if err := c.deployments.Save(ctx, d); err != nil {
 		slog.Error("failed to persist failed deployment", "err", err, "deployment_id", d.ID)
 	}
-	_ = c.publisher.PublishFailed(ctx, d.ID, d.ProjectID, reason)
+	_ = c.publisher.PublishFailed(ctx, d.ID, d.ProjectID, reason, correlationID)
 }
 
 func (c *DeployCommand) imageTag(projectID, version string) string {

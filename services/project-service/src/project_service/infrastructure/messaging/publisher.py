@@ -138,6 +138,18 @@ class ProjectEventPublisher:
 
         logger.info(f'Publishing project.created_with_secrets for project {project_id} with {len(secrets_data)} secrets')
         await self._project_created_with_secrets_publisher.publish(event)
+
+        await self._logs_publisher.publish({
+            "service": "project-service",
+            "level": "INFO",
+            "message": f"Project initializing: {name}",
+            "project_id": str(project_id),
+            "owner_id": str(owner_id),
+            "correlation_id": str(corr_id),
+            "action": "project.created_with_secrets",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "environment": "development",
+        })
         return corr_id
 
     async def publish_project_ready(
@@ -195,7 +207,8 @@ class ProjectEventPublisher:
             "level": "INFO",
             "message": f"Project deleted: {project_id}",
             "project_id": str(project_id),
+            "correlation_id": str(correlation_id),
             "action": "project.deleted",
             "timestamp": datetime.now(UTC).isoformat(),
-            "environment": "development"
+            "environment": "development",
         })
